@@ -1,0 +1,34 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { BuySellCard } from './components/BuySellCard';
+import { QuotesCard } from './components/QuotesCard';
+import { LiveChart } from '@/components/LiveChart';
+
+type Quote = {
+  id: string;
+  amount: string | number;
+  currency: string;
+  quoteRate: string | number;
+  status: 'ACTIVE' | 'EXPIRED' | 'USED';
+  createdAt: string;
+  expiresAt: string;
+};
+
+export default function DashboardPage() {
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+
+  const handleQuoteCreated = (newQuote: Quote) => {
+    setQuotes(prev => [...prev, newQuote]);
+  };
+
+  return (
+    <div className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <BuySellCard onQuoteCreated={handleQuoteCreated} />
+        <QuotesCard />
+      </div>
+      <LiveChart />
+    </div>
+  );
+}
