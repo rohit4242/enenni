@@ -96,7 +96,7 @@ export const columns: ColumnDef<BankAccount>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: () => {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

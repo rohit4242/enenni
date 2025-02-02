@@ -12,9 +12,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useRouter } from "next/navigation";
 import { Order } from "@prisma/client";
 import { DateRange } from "react-day-picker";
+import { useCallback } from "react";
 
 import { columns } from "./columns";
 import { DateRangePicker } from "./date-range-picker";
@@ -32,7 +32,6 @@ import { RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export function OrdersDataTable() {
-  const router = useRouter();
   const { toast } = useToast();
   const [data, setData] = React.useState<Order[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -40,7 +39,7 @@ export function OrdersDataTable() {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
   const [isLoading, setIsLoading] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [rowsPerPage] = React.useState(10);
   const [lastUpdated, setLastUpdated] = React.useState<string>("");
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -56,7 +55,7 @@ export function OrdersDataTable() {
     return () => clearInterval(interval);
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setIsLoading(true);
       const searchParams = new URLSearchParams();
@@ -79,7 +78,8 @@ export function OrdersDataTable() {
       const orders = await response.json();
       setData(orders);
       setLastUpdated(new Date().toLocaleString());
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       toast({
         title: "Error",
         description: "Failed to fetch orders",
@@ -88,11 +88,32 @@ export function OrdersDataTable() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      pagination,
+    },
+    manualPagination: false,
+    pageCount: Math.ceil(data.length / rowsPerPage),
+  });
 
   React.useEffect(() => {
     fetchOrders();
-  }, [dateRange]);
+  }, [dateRange, fetchOrders]);
 
   const handleRefresh = () => {
     fetchOrders();
@@ -125,27 +146,6 @@ export function OrdersDataTable() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      pagination,
-    },
-    manualPagination: false,
-    pageCount: Math.ceil(data.length / rowsPerPage),
-  });
 
   React.useEffect(() => {
     setPagination(prev => ({

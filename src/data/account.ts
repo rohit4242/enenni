@@ -8,6 +8,7 @@ export const getAccountByUserId = async (userId: string) => {
 
     return account;
   } catch (error) {
+    console.error(error);
     return null;
   }
 };

@@ -3,7 +3,6 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { PageLayout } from "@/components/PageLayout"
-import { BalancesDataTable } from "./components/data-table"
 
 export default function BalancesPage() {
   const router = useRouter()

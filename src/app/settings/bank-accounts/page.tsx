@@ -2,7 +2,7 @@
 import { useNewBankAccountModal } from "@/hooks/use-new-bank-account"
 import { BankAccountsDataTable } from "./components/data-table"
 import { Button } from "@/components/ui/button"
-import BalanceCard from "@/components/BalanceCard"
+import { BalanceCard } from "@/components/BalanceCard"
 import { PageLayout } from "@/components/PageLayout"
 
 export default function BankAccountsPage() {
@@ -24,8 +24,6 @@ export default function BankAccountsPage() {
       <div className="space-y-6">
         <BalanceCard
           balance="0.95"
-          onDeposit={() => console.log("Deposit clicked")}
-          onWithdraw={() => console.log("Withdraw clicked")}
         />
         <BankAccountsDataTable />
       </div>

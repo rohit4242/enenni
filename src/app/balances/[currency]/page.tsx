@@ -2,7 +2,6 @@
 
 import { BalanceCard } from "@/components/BalanceCard";
 import { BalancesDataTable } from "../components/data-table";
-import { useCallback } from "react";
 import { use } from "react";
 
 export default function BalanceCurrencyPage({
@@ -12,14 +11,6 @@ export default function BalanceCurrencyPage({
 }) {
   const resolvedParams = use(params);
   const currency = resolvedParams.currency;
-
-  const handleDeposit = useCallback(() => {
-    console.log(`Deposit ${currency}`);
-  }, [currency]);
-
-  const handleWithdraw = useCallback(() => {
-    console.log(`Withdraw ${currency}`);
-  }, [currency]);
 
   return (
     <div className="space-y-6">

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { SumsubClient } from "@/lib/sumsub";
 import { auth } from "@/auth";
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     // Get authenticated user
     const session = await auth();
@@ -22,15 +22,16 @@ export async function POST(req: Request) {
         { status: 200 }
       );
 
-    } catch (error: any) {
+    } catch (error) {
       console.error("[SUMSUB_ACCESS_TOKEN] Error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create access token";
       return NextResponse.json(
-        { error: error.message || "Failed to create access token" },
+        { error: errorMessage },
         { status: 500 }
       );
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("[SUMSUB_ACCESS_TOKEN] Unexpected Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

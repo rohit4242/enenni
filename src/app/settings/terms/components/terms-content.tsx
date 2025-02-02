@@ -16,10 +16,10 @@ export function TermsContent() {
             In these Terms and Conditions:
           </p>
           <ul className="list-disc list-inside text-sm text-muted-foreground space-y-2 ml-4">
-            <li>"Platform" refers to Fuze's website and services</li>
-            <li>"User," "You," and "Your" refers to you, the person accessing this platform</li>
-            <li>"Company," "We," "Our," and "Us" refers to Fuze</li>
-            <li>"Party" refers to either you or us</li>
+            <li>&ldquo;Platform&rdquo; refers to Fuze&apos;s website and services</li>
+            <li>&ldquo;User,&rdquo; &ldquo;You,&rdquo; and &ldquo;Your&rdquo; refers to you, the person accessing this platform</li>
+            <li>&ldquo;Company,&rdquo; &ldquo;We,&rdquo; &ldquo;Our,&rdquo; and &ldquo;Us&rdquo; refers to Fuze</li>
+            <li>&ldquo;Party&rdquo; refers to either you or us</li>
           </ul>
         </div>
       </section>

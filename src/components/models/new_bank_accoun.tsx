@@ -1,7 +1,6 @@
 "use client";
 
 import * as z from "zod";
-import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useNewBankAccountModal } from "@/hooks/use-new-bank-account";
@@ -65,6 +64,7 @@ export const NewBankAccount: React.FC<NewBankAccountModalProps> = ({}) => {
       setLoading(true);
       // TODO: api call
     } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }

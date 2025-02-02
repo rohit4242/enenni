@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 
 export async function GET(
   req: Request,
-  { params }: { params: { currency: string } }
 ) {
   try {
     const { searchParams } = new URL(req.url)

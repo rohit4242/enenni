@@ -1,6 +1,4 @@
 'use client';
-
-import { useState, useEffect } from 'react';
 import { BuySellCard } from './components/BuySellCard';
 import { QuotesCard } from './components/QuotesCard';
 import { LiveChart } from '@/components/LiveChart';
@@ -16,10 +14,9 @@ type Quote = {
 };
 
 export default function DashboardPage() {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-
   const handleQuoteCreated = (newQuote: Quote) => {
-    setQuotes(prev => [...prev, newQuote]);
+    // Handle the new quote in QuotesCard component directly
+    console.log('New quote created:', newQuote);
   };
 
   return (

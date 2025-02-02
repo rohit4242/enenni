@@ -2,7 +2,17 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { generateReferenceId } from "@/lib/utils";
 import { currentUser } from "@/lib/auth";
-const TEMP_USER_ID = "test_user_1";
+
+interface WhereClause {
+  referenceId?: {
+    contains: string;
+    mode: "insensitive";
+  };
+  createdAt?: {
+    gte?: Date;
+    lte?: Date;
+  };
+}
 
 export async function GET(req: Request) {
   try {
@@ -12,7 +22,7 @@ export async function GET(req: Request) {
     const endDate = searchParams.get("endDate");
 
     // Build where clause
-    const where: any = {};
+    const where: WhereClause = {};
 
     if (search) {
       where.referenceId = {

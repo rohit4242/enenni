@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { transactionFormSchema, type TransactionFormValues } from "@/lib/schemas/transaction"
 import { useTransactionModal } from "@/hooks/use-transaction-modal"
+import Image from "next/image"
 
 interface TransactionFormProps {
   type: "deposit" | "withdraw"
@@ -100,10 +101,14 @@ export function TransactionForm({
                       <SelectValue>
                         {field.value && (
                           <div className="flex items-center gap-2">
-                            <img 
-                              src={currencies.find(c => c.id === field.value)?.flag} 
+                            <Image 
+                              src={currencies.find(c => c.id === field.value)?.flag ?? ""} 
                               alt={field.value}
                               className="h-5 w-5 rounded-full"
+                              width={20}
+                              height={20}
+
+
                             />
                             {field.value}
                           </div>
@@ -119,12 +124,15 @@ export function TransactionForm({
                       >
                         <div className="flex items-center gap-2">
                           {currency.flag && (
-                            <img 
+                            <Image  
                               src={currency.flag} 
                               alt={currency.name}
                               className="h-5 w-5 rounded-full"
+                              width={20}
+                              height={20}
                             />
                           )}
+
                           {currency.id}
                         </div>
                       </SelectItem>
@@ -153,10 +161,13 @@ export function TransactionForm({
                     <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-muted-foreground">
                       <div className="flex items-center gap-2">
                         {form.watch("currency") && (
-                          <img 
-                            src={currencies.find(c => c.id === form.watch("currency"))?.flag} 
+                          <Image
+                            width={20}
+                            height={20}
                             alt={form.watch("currency")}
+                            src={currencies.find(c => c.id === form.watch("currency"))?.flag ?? ""}
                             className="h-5 w-5 rounded-full"
+
                           />
                         )}
                         {form.watch("currency")}

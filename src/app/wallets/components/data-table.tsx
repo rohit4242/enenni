@@ -47,7 +47,8 @@ export function WalletsDataTable() {
       
       const transactions = await response.json()
       setData(transactions)
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       toast({
         title: "Error",
         description: "Failed to fetch transactions",

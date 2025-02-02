@@ -8,7 +8,6 @@ import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import LoginButton from "@/components/auth/login-button";
-import { UserNav } from "@/components/UserNav";
 import { Button } from "@/components/ui/button";
 import { UserButton } from "./auth/user-button";
 
@@ -119,7 +118,6 @@ export function MainNav({
 
       <div className="ml-auto">
         {session ? (
-          // <UserNav />
           <UserButton />
         ) : (
           <LoginButton mode="modal" asChild>

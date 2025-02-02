@@ -94,7 +94,8 @@ export function BuySellCard({ onQuoteCreated }: { onQuoteCreated: (quote: Quote)
         title: "Quote received",
         description: "Your quote is valid for 30 seconds",
       });
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       toast({
         title: "Error",
         description: "Failed to get quote. Please try again.",

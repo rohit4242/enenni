@@ -38,10 +38,15 @@ const chartTypes = [
   { value: "bar", label: "Bar Chart" },
 ]
 
+interface BinanceKlineData {
+  time: string;
+  price: number;
+}
+
 export function LiveChart() {
   const [timeRange, setTimeRange] = React.useState("1h")
   const [cryptoPair, setCryptoPair] = React.useState("BTCUSDT")
-  const [chartData, setChartData] = React.useState([])
+  const [chartData, setChartData] = React.useState<BinanceKlineData[]>([])
   const [chartType, setChartType] = React.useState<"area" | "bar">("area")
 
   const fetchData = React.useCallback(async () => {
@@ -52,7 +57,7 @@ export function LiveChart() {
     try {
       const response = await fetch(url)
       const data = await response.json()
-      const formattedData = data.map((item: any) => ({
+      const formattedData: BinanceKlineData[] = data.map((item: [number, string, string, string, string, string]) => ({
         time: new Date(item[0]).toISOString(),
         price: Number.parseFloat(item[4]),
       }))

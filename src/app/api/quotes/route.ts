@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const quotes = await db.quote.findMany({
       where: {
@@ -67,7 +67,7 @@ export async function GET(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE() {
   try {
     await db.quote.deleteMany({
       where: {

@@ -2,6 +2,13 @@
 import crypto from 'crypto';
 import db from '@/lib/db';
 
+interface SumsubWebhookEvent {
+  applicantId: string;
+  reviewResult: {
+    reviewAnswer: "GREEN" | "RED";
+  };
+}
+
 export class SumsubClient {
   private baseUrl = 'https://api.sumsub.com';
   private appToken: string;
@@ -62,7 +69,7 @@ export class SumsubClient {
     }
   }
 
-  async handleWebhookEvent(event: any) {
+  async handleWebhookEvent(event: SumsubWebhookEvent) {
     const { applicantId, reviewResult } = event;
     
     // Update user KYC status in database

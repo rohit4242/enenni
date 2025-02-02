@@ -1,12 +1,18 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(
-  req: Request,
-  { params }: { params: { currency: string } }
+export async function POST(
+  req: NextRequest,
 ) {
+ 
+  const body = await req.json()
+  if (!body.currencyID) {
+
+    return new NextResponse("Currency ID is required", { status: 400 })
+  }
   try {
     // Mock transactions data for each currency
     const mockTransactions = {
+
       usdt: [
         {
           id: "1",
@@ -72,8 +78,10 @@ export async function GET(
       ]
     }
 
-    const currency = params.currency.toLowerCase() as 'usdt' | 'btc' | 'eth' | 'usdc'
+    const currency = body.currencyID.toLowerCase() as 'usdt' | 'btc' | 'eth' | 'usdc'
     return NextResponse.json(mockTransactions[currency] || [])
+
+
   } catch (error) {
     console.error('[WALLET_TRANSACTIONS_GET]', error)
     return new NextResponse("Internal error", { status: 500 })
