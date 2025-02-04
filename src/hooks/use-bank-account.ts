@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query"
-import { BankAccount, Transaction } from "@/lib/types/bank-account"
+import { useQuery } from "@tanstack/react-query";
+import { BankAccount, Transaction } from "@/lib/types/bank-account";
 
 export type BankAccountWithTransactions = BankAccount & {
-  transactions: Transaction[]
-}
+  transactions: Transaction[];
+};
 
 export const useBankAccount = (currency: string) => {
   const {
@@ -13,17 +13,17 @@ export const useBankAccount = (currency: string) => {
   } = useQuery<BankAccountWithTransactions>({
     queryKey: ["bankAccount", currency],
     queryFn: async () => {
-      const response = await fetch(`/api/bank-accounts/${currency}`)
+      const response = await fetch(`/api/bank-accounts/${currency}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch bank account")
+        throw new Error("Failed to fetch bank account");
       }
-      return response.json()
+      return response.json();
     },
-  })
+  });
 
   return {
     bankAccount,
     isLoading,
     error: error as Error,
-  }
-} 
+  };
+};

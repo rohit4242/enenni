@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { columns } from "./columns";
 import { ChevronDown } from "lucide-react";
-  import { Transaction } from "@/lib/types/bank-account";
 
 interface BalancesDataTableProps {
   transactions: {

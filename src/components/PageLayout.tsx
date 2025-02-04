@@ -18,7 +18,7 @@ export function PageLayout({
   return (
     <div className="space-y-6 mt-6 md:mt-2 md:p-10">
       {(heading || subheading || actions) && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between ">
           {(heading || subheading) && (
             <div className="space-y-1">
               {heading && (

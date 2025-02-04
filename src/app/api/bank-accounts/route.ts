@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import  db  from "@/lib/db"
 import { z } from "zod"
+import { newBankAccountSchema } from "@/lib/schemas/bank-account"
 
 export async function GET() {
   try {
@@ -13,7 +14,7 @@ export async function GET() {
 
     const bankAccounts = await db.bankAccount.findMany({
       where: {
-        userId: "cm6o5oyzo0000ui48jucvqkky"
+        userId: session.user.id
       },
       include: {
         transactions: {
@@ -38,26 +39,24 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await auth()
-
-    if (!session?.user) {
+    
+    if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
     const body = await req.json()
-    const validatedData = z.object({
-      accountHolder: z.string().min(1, "Account holder is required"),
-      bankName: z.string().min(1, "Bank name is required"),
-      accountNumber: z.string().optional(),
-      iban: z.string().optional(),
-      currency: z.string().min(1, "Currency is required"),
-      bankAddress: z.string().optional(),
-      bankCountry: z.string().min(1, "Bank country is required"),
-    }).parse(body)
+    const validationResult = newBankAccountSchema.safeParse(body)
 
-    // Check if IBAN already exists
-    if (validatedData.iban) {
+    if (!validationResult.success) {
+      return new NextResponse("Invalid input", { status: 400 })
+    }
+
+    const { accountHolder, bankName, accountNumber, iban, currency, bankAddress, bankCountry } = validationResult.data
+
+    // Check if IBAN already exists (if provided)
+    if (iban) {
       const existingAccount = await db.bankAccount.findUnique({
-        where: { iban: validatedData.iban }
+        where: { iban },
       })
 
       if (existingAccount) {
@@ -67,10 +66,15 @@ export async function POST(req: Request) {
 
     const bankAccount = await db.bankAccount.create({
       data: {
-        ...validatedData,
-        user: { connect: { id: session.user.id } },
-        balance: 0,
-      }
+        accountHolder,
+        bankName,
+        accountNumber,
+        iban,
+        currency,
+        bankAddress,
+        bankCountry,
+        userId: session.user.id,
+      },
     })
 
     return NextResponse.json(bankAccount)

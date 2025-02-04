@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { NewBankAccount } from "../models/new_bank_accoun";
-import { TransactionModal } from "../models/transaction_modal";
+import { NewWalletModal } from "../modals/new-wallet-modal";
+import { NewBankAccountModal } from "../modals/new-bank-account-modal";
 
 export const ModalProvider = () => {
   const [isMounted, setIsMounted] = useState(false);
@@ -16,9 +16,9 @@ export const ModalProvider = () => {
   }
 
   return (
-   <>
-    <NewBankAccount />
-    <TransactionModal />
-   </>
-  )
+    <>
+      <NewWalletModal />
+      <NewBankAccountModal />
+    </>
+  );
 };

@@ -1,9 +1,17 @@
 import * as z from "zod"
+import { TransactionType } from "@prisma/client"
 
-export const transactionFormSchema = z.object({
-  currency: z.string().min(1, "Please select a currency"),
+export const depositSchema = z.object({
+  currency: z.string().min(1, "Currency is required"),
   amount: z.string().min(1, "Amount is required"),
-  fromAccount: z.string().min(1, "Please select an account"),
+  fromWallet: z.string().min(1, "Wallet address is required"),
 })
 
-export type TransactionFormValues = z.infer<typeof transactionFormSchema> 
+export const withdrawSchema = z.object({
+  currency: z.string().min(1, "Currency is required"),
+  amount: z.string().min(1, "Amount is required"),
+  toWallet: z.string().min(1, "Wallet address is required"),
+})
+
+export type DepositFormValues = z.infer<typeof depositSchema>
+export type WithdrawFormValues = z.infer<typeof withdrawSchema> 

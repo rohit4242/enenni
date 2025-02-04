@@ -16,15 +16,14 @@ export async function GET(
     // Use hardcoded user ID for testing
     const bankAccount = await db.bankAccount.findFirst({
       where: {
-        userId: "cm6o5oyzo0000ui48jucvqkky",
+        userId: session.user.id,
         currency: params.accountId.toUpperCase()
       },
       include: {
         transactions: {
           orderBy: {
             createdAt: "desc"
-          },
-          take: 5
+          }
         }
       }
     })

@@ -113,7 +113,7 @@ export default function BalancePage({
 
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Transaction History</h3>
-        {bankAccount ? (
+        {bankAccount?.transactions ? (
           <BalancesDataTable transactions={bankAccount.transactions} />
         ) : (
           <Alert>

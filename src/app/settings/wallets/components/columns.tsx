@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Download } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -9,68 +9,57 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-export type Wallet = {
-  id: string
-  date: string
-  type: "Deposit" | "Withdrawal" | "Transfer"
-  amount: number
-  currency: string
-  status: "Completed" | "Pending" | "Failed"
-  reference: string
-}
+import { Wallet } from "@prisma/client"
+import { Badge } from "@/components/ui/badge"
 
 export const columns: ColumnDef<Wallet>[] = [
   {
-    accessorKey: "date",
+    accessorKey: "address",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Date
+          Wallet Address
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
-    cell: ({ row }) => {
-      return <div>{new Date(row.getValue("date")).toLocaleDateString()}</div>
-    },
+  },
+  {
+    accessorKey: "nickname",
+    header: "Nickname",
   },
   {
     accessorKey: "type",
     header: "Type",
-    enableSorting: true,
-    enableHiding: true,
   },
   {
-    accessorKey: "amount",
+    accessorKey: "currency",
+    header: "Currency",
+  },
+  {
+    accessorKey: "balance",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Amount
+          Balance
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"))
+      const balance = parseFloat(row.getValue("balance"))
       const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: row.getValue("currency"),
-      }).format(amount)
-
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 8,
+      }).format(balance)
       return <div className="font-medium">{formatted}</div>
     },
-  },
-  {
-    accessorKey: "currency",
-    header: "Currency",
-    enableHiding: true,
   },
   {
     accessorKey: "status",
@@ -78,25 +67,17 @@ export const columns: ColumnDef<Wallet>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string
       return (
-        <div className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-          status === "Completed" 
-            ? "bg-green-50 text-green-600" 
-            : status === "Pending" 
-            ? "bg-yellow-50 text-yellow-600" 
-            : "bg-red-50 text-red-600"
-        }`}>
+        <Badge variant={status === "APPROVED" ? "success" : "secondary"}>
           {status}
-        </div>
+        </Badge>
       )
     },
   },
   {
-    accessorKey: "reference",
-    header: "Reference",
-  },
-  {
     id: "actions",
     cell: ({ row }) => {
+      const wallet = row.original
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -105,11 +86,10 @@ export const columns: ColumnDef<Wallet>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
+            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(wallet.address)}>
+              Copy Address
             </DropdownMenuItem>
-            <DropdownMenuItem>View Details</DropdownMenuItem>
+            <DropdownMenuItem>View Transactions</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )

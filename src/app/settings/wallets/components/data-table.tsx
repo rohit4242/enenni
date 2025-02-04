@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useEffect, useState } from "react"
 import {
   ColumnFiltersState,
   SortingState,
@@ -23,50 +23,49 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { ChevronDown } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { columns, Wallet } from "./columns"
-import { ChevronDown } from "lucide-react"
-
-const data: Wallet[] = [
-  {
-    id: "1",
-    date: "2024-03-10",
-    type: "Deposit",
-    amount: 1000.00,
-    currency: "USD",
-    status: "Completed",
-    reference: "DEP123456",
-  },
-  {
-    id: "2",
-    date: "2024-03-09",
-    type: "Withdrawal",
-    amount: 500.00,
-    currency: "USD",
-    status: "Pending",
-    reference: "WIT789012",
-  },
-  // Add more sample data as needed
-]
+import { columns } from "./columns"
+import { Wallet } from "@prisma/client"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function WalletsDataTable() {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [loading, setLoading] = useState(true)
+  const [wallets, setWallets] = useState<Wallet[]>([])
+
+  useEffect(() => {
+    const fetchWallets = async () => {
+      try {
+        const response = await fetch('/api/wallets')
+        const data = await response.json()
+        console.log("data: ", data)
+        setWallets(data)
+      } catch (error) {
+        console.error('Failed to fetch wallets:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchWallets()
+  }, [])
 
   const table = useReactTable({
-    data,
+    data: wallets,
     columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     state: {
@@ -76,14 +75,27 @@ export function WalletsDataTable() {
     },
   })
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <div className="rounded-md border">
+          <div className="h-24 p-4">
+            <Skeleton className="h-full w-full" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div>
-      <div className="flex items-center justify-between py-4">
+    <div className="space-y-4">
+      <div className="flex items-center gap-4">
         <Input
-          placeholder="Filter by reference..."
-          value={(table.getColumn("reference")?.getFilterValue() as string) ?? ""}
+          placeholder="Filter wallets..."
+          value={(table.getColumn("address")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("reference")?.setFilterValue(event.target.value)
+            table.getColumn("address")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -103,7 +115,9 @@ export function WalletsDataTable() {
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
@@ -150,7 +164,7 @@ export function WalletsDataTable() {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  No wallets found.
                 </TableCell>
               </TableRow>
             )}

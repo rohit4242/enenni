@@ -120,7 +120,7 @@ const RegisterForm = () => {
           </div>
           <FormError message={error} />
           <FormSucess message={sucess} />
-          <Button disabled={isPending} type="submit" className="w-full">
+          <Button disabled={isPending} type="submit" className="w-full" loading={isPending}>
             Create an account
           </Button>
         </form>

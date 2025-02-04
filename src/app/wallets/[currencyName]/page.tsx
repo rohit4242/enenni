@@ -3,7 +3,6 @@
 import { use } from "react";
 import { BalanceCard } from "@/components/BalanceCard";
 import { WalletsDataTable } from "../components/data-table";
-import { TransactionModal } from "@/components/modals/transaction-modal";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useWallet, WalletWithTransactions } from "@/hooks/use-wallet";
@@ -32,11 +31,6 @@ export default function WalletPage({
     return null;
   }
 
-  if (!currencyName) {
-    router.push("/wallets");
-    return null;
-  }
-
   if (error) {
     return (
       <div className="space-y-6">
@@ -44,13 +38,13 @@ export default function WalletPage({
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Invalid Wallet</AlertTitle>
           <AlertDescription>
-            {error} 
-            <Button 
-              variant="link" 
-              className="pl-2 text-destructive" 
+            {error}
+            <Button
+              variant="link"
+              className="pl-2 text-destructive"
               onClick={() => router.push("/wallets/btc")}
             >
-               Go to BTC wallet
+              Go to BTC wallet
             </Button>
           </AlertDescription>
         </Alert>
@@ -66,8 +60,8 @@ export default function WalletPage({
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Invalid Wallet</AlertTitle>
         <AlertDescription>
-          The wallet type {currencyName.toUpperCase()} is not supported.
-          Please select a valid wallet type.
+          The wallet type {currencyName.toUpperCase()} is not supported. Please
+          select a valid wallet type.
         </AlertDescription>
       </Alert>
     );
@@ -113,7 +107,10 @@ export default function WalletPage({
                     ))}
                   </div>
                   {[1, 2, 3, 4, 5].map((row) => (
-                    <div key={row} className="grid grid-cols-6 gap-4 p-4 border-t">
+                    <div
+                      key={row}
+                      className="grid grid-cols-6 gap-4 p-4 border-t"
+                    >
                       {[1, 2, 3, 4, 5, 6].map((cell) => (
                         <Skeleton key={cell} className="h-5 w-full" />
                       ))}
@@ -165,7 +162,8 @@ export default function WalletPage({
                 <Alert>
                   <AlertTitle>No Transactions</AlertTitle>
                   <AlertDescription>
-                    No transactions found for this wallet. Make a deposit to get started.
+                    No transactions found for this wallet. Make a deposit to get
+                    started.
                   </AlertDescription>
                 </Alert>
               )}
@@ -173,7 +171,6 @@ export default function WalletPage({
           </>
         )}
       </div>
-      <TransactionModal />
     </>
   );
 }

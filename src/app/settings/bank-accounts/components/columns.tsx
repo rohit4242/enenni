@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Download } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -9,94 +9,97 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-export type BankAccount = {
-  id: string
-  date: string
-  type: "Deposit" | "Withdrawal" | "Transfer"
-  amount: number
-  currency: string
-  status: "Completed" | "Pending" | "Failed"
-  reference: string
-}
+import { BankAccount } from "@prisma/client"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "@/hooks/use-toast"
 
 export const columns: ColumnDef<BankAccount>[] = [
   {
-    accessorKey: "date",
+    accessorKey: "accountHolder",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Date
+          Account Holder
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
-    cell: ({ row }) => {
-      return <div>{new Date(row.getValue("date")).toLocaleDateString()}</div>
-    },
   },
   {
-    accessorKey: "type",
-    header: "Type",
-    enableSorting: true,
-    enableHiding: true,
-  },
-  {
-    accessorKey: "amount",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Amount
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"))
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: row.getValue("currency"),
-      }).format(amount)
-
-      return <div className="font-medium">{formatted}</div>
-    },
+    accessorKey: "bankName",
+    header: "Bank Name",
   },
   {
     accessorKey: "currency",
     header: "Currency",
-    enableHiding: true,
   },
   {
-    accessorKey: "status",
-    header: "Status",
+    accessorKey: "iban",
+    header: "IBAN",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
+      const iban = row.getValue("iban") as string
+      const accountNumber = row.original.accountNumber
+      const displayValue = iban || accountNumber || "N/A"
+      
       return (
-        <div className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-          status === "Completed" 
-            ? "bg-green-50 text-green-600" 
-            : status === "Pending" 
-            ? "bg-yellow-50 text-yellow-600" 
-            : "bg-red-50 text-red-600"
-        }`}>
-          {status}
+        <div className="flex items-center gap-2">
+          <span className="font-mono">{displayValue}</span>
+          {displayValue !== "N/A" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => {
+                navigator.clipboard.writeText(displayValue)
+                toast({
+                  title: "Copied",
+                  description: "Account details copied to clipboard",
+                })
+              }}
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       )
     },
   },
   {
-    accessorKey: "reference",
-    header: "Reference",
+    accessorKey: "bankCountry",
+    header: "Country",
+  },
+  {
+    accessorKey: "balance",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Balance
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const balance = parseFloat(row.getValue("balance"))
+      const currency = row.getValue("currency") as string
+      const formatted = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currency,
+      }).format(balance)
+
+      return <div className="font-medium">{formatted}</div>
+    },
   },
   {
     id: "actions",
-    cell: () => {
+    cell: ({ row }) => {
+      const bankAccount = row.original
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -105,11 +108,25 @@ export const columns: ColumnDef<BankAccount>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
+            <DropdownMenuItem
+              onClick={() => {
+                const value = bankAccount.iban || bankAccount.accountNumber
+                if (value) {
+                  navigator.clipboard.writeText(value)
+                  toast({
+                    title: "Copied",
+                    description: "Account details copied to clipboard",
+                  })
+                }
+              }}
+            >
+              Copy Account Details
             </DropdownMenuItem>
-            <DropdownMenuItem>View Details</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => window.location.href = `/bank-accounts/${bankAccount.id}`}
+            >
+              View Transactions
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )

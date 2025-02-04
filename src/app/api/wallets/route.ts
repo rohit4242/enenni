@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/db";
+import { newWalletSchema } from "@/lib/schemas/wallet";
 
 export async function GET() {
   try {
@@ -13,7 +14,7 @@ export async function GET() {
     const wallets = await prisma.wallet.findMany({
       where: {
         userId: "cm6o5oyzo0000ui48jucvqkky",
-        status: "APPROVED"
+        
       },
       include: {
         transactions: true
@@ -36,20 +37,32 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { address, type, currency } = body;
+    const validationResult = newWalletSchema.safeParse(body);
 
-    if (!address || !type || !currency) {
-      return new NextResponse("Missing required fields", { status: 400 });
+    if (!validationResult.success) {
+      return new NextResponse("Invalid input", { status: 400 });
+    }
+
+    const { address, nickname, type, currency } = validationResult.data;
+
+    // Check if wallet address already exists
+    const existingWallet = await prisma.wallet.findUnique({
+      where: { address },
+    });
+
+    if (existingWallet) {
+      return new NextResponse("Wallet address already exists", { status: 400 });
     }
 
     const wallet = await prisma.wallet.create({
       data: {
         address,
+        nickname,
         type,
         currency,
         status: "PENDING",
-        userId: session.user.id
-      }
+        userId: session.user.id,
+      },
     });
 
     return NextResponse.json(wallet);

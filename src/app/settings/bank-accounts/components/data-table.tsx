@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState } from "react"
 import {
   ColumnFiltersState,
   SortingState,
@@ -29,44 +29,27 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { columns, BankAccount } from "./columns"
-import { ChevronDown } from "lucide-react"
+import { columns } from "./columns"
+import { ChevronDown, Search } from "lucide-react"
+import { BankAccount } from "@prisma/client"
 
-const data: BankAccount[] = [
-  {
-    id: "1",
-    date: "2024-03-10",
-    type: "Deposit",
-    amount: 1000.00,
-    currency: "USD",
-    status: "Completed",
-    reference: "DEP123456",
-  },
-  {
-    id: "2",
-    date: "2024-03-09",
-    type: "Withdrawal",
-    amount: 500.00,
-    currency: "USD",
-    status: "Pending",
-    reference: "WIT789012",
-  },
-  // Add more sample data as needed
-]
+interface BankAccountsDataTableProps {
+  accounts: BankAccount[]
+}
 
-export function BankAccountsDataTable() {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+export function BankAccountsDataTable({ accounts }: BankAccountsDataTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 
   const table = useReactTable({
-    data,
+    data: accounts,
     columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     state: {
@@ -77,16 +60,19 @@ export function BankAccountsDataTable() {
   })
 
   return (
-    <div>
-      <div className="flex items-center justify-between py-4">
-        <Input
-          placeholder="Filter by reference..."
-          value={(table.getColumn("reference")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("reference")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+    <div className="space-y-4">
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Filter accounts..."
+            value={(table.getColumn("accountHolder")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("accountHolder")?.setFilterValue(event.target.value)
+            }
+            className="pl-8 max-w-sm"
+          />
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -103,7 +89,9 @@ export function BankAccountsDataTable() {
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
@@ -112,6 +100,7 @@ export function BankAccountsDataTable() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -150,13 +139,14 @@ export function BankAccountsDataTable() {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  No results found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
       <div className="flex items-center justify-end space-x-2 py-4">
         <Button
           variant="outline"

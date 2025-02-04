@@ -19,7 +19,9 @@ export function WalletsSidebar() {
         const response = await fetch('/api/wallets')
         const data = await response.json()
         console.log(data)
-        setWallets(data)
+        // Filter wallets to only include APPROVED status
+        const approvedWallets = data.filter((wallet: Wallet) => wallet.status === "APPROVED")
+        setWallets(approvedWallets)
       } catch (error) {
         console.error('Failed to fetch wallets:', error)
       } finally {
