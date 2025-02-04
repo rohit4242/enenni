@@ -11,13 +11,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BalanceCardProps {
-  balance: string;
+  balance?: string;
   currency?: string;
+  isLoading?: boolean;
 }
 
-export function BalanceCard({ balance, currency = "AED" }: BalanceCardProps) {
+export function BalanceCard({ 
+  balance, 
+  currency = "AED", 
+  isLoading = false 
+}: BalanceCardProps) {
   const { onOpen } = useTransactionModal();
 
   return (
@@ -39,9 +45,13 @@ export function BalanceCard({ balance, currency = "AED" }: BalanceCardProps) {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <p className="text-2xl font-semibold tracking-tight">
-            {balance} {currency}
-          </p>
+          <div className="text-2xl font-semibold tracking-tight">
+            {isLoading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : (
+              `${balance || "0"} ${currency}`
+            )}
+          </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button 

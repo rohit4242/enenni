@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   ColumnFiltersState,
   SortingState,
@@ -11,7 +11,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
 import {
   Table,
@@ -20,31 +20,43 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { ChevronDown } from "lucide-react"
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { columns } from "./columns"
-import { WalletWithTransactions } from "@/hooks/use-wallet"
+} from "@/components/ui/dropdown-menu";
+import { columns } from "./columns";
+import { ChevronDown } from "lucide-react";
+  import { Transaction } from "@/lib/types/bank-account";
 
-interface WalletsDataTableProps {
-  wallet: WalletWithTransactions | null
+interface BalancesDataTableProps {
+  transactions: {
+    id: string
+    currency: string
+    status: "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED"
+    type: "DEPOSIT" | "WITHDRAWAL" | "TRANSFER"
+    createdAt: Date
+    amount: string | number
+    referenceId: string
+    transactionHash: string | null
+    description: string | null
+    walletId: string | null
+    bankAccountId: string | null
+  }[]
 }
 
-export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+export function BalancesDataTable({ transactions }: BalancesDataTableProps) {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data: wallet?.transactions ?? [],
+    data: transactions,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -54,37 +66,31 @@ export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
     },
-  })
+  });
 
-  if (!wallet?.transactions?.length) {
+  if (!transactions.length) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
         <h3 className="text-lg font-semibold mb-2">No Transactions Yet</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Start by making a deposit to your wallet.
+          Start by making a deposit to your balance.
         </p>
-        <Button 
-          onClick={() => window.dispatchEvent(new CustomEvent('OPEN_DEPOSIT_MODAL'))}
-          variant="outline"
-        >
-          Make a Deposit
-        </Button>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-
+    <div>
+      <div className="flex items-center gap-4 py-4">
         <Input
-          placeholder="Filter by Amount..."
+          placeholder="Filter by amount..."
           value={(table.getColumn("amount")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
             table.getColumn("amount")?.setFilterValue(event.target.value)
@@ -113,7 +119,7 @@ export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
-                )
+                );
               })}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -139,20 +145,23 @@ export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
+                <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>
@@ -161,29 +170,23 @@ export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
       </div>
     </div>
-  )
-} 
+  );
+}

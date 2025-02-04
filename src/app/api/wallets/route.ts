@@ -1,58 +1,60 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import prisma from "@/lib/db";
 
 export async function GET() {
   try {
-    // Mock data instead of database query
-    const dummyWallets = [
-      {
-        id: "1",
-        address: "0x1234...5678",
-        type: "First party",
-        status: "APPROVED",
-        balance: "1000.50",
-        currency: "USDT",
-        userId: "1",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: "2",
-        address: "0x8765...4321",
-        type: "First party",
-        status: "APPROVED",
-        balance: "0.05",
-        currency: "BTC",
-        userId: "1",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: "3",
-        address: "0x9876...1234",
-        type: "First party",
-        status: "APPROVED",
-        balance: "2.75",
-        currency: "ETH",
-        userId: "1",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: "4",
-        address: "0x4567...8901",
-        type: "First party",
-        status: "APPROVED",
-        balance: "500.00",
-        currency: "USDC",
-        userId: "1",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ]
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
-    return NextResponse.json(dummyWallets)
+    const wallets = await prisma.wallet.findMany({
+      where: {
+        userId: "cm6o5oyzo0000ui48jucvqkky",
+        status: "APPROVED"
+      },
+      include: {
+        transactions: true
+      }
+    });
+
+    return NextResponse.json(wallets);
   } catch (error) {
-    console.error('[WALLETS_GET]', error)
-    return new NextResponse("Internal error", { status: 500 })
+    console.error("[WALLETS_GET]", error);
+    return new NextResponse("Internal error", { status: 500 });
   }
-} 
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const body = await req.json();
+    const { address, type, currency } = body;
+
+    if (!address || !type || !currency) {
+      return new NextResponse("Missing required fields", { status: 400 });
+    }
+
+    const wallet = await prisma.wallet.create({
+      data: {
+        address,
+        type,
+        currency,
+        status: "PENDING",
+        userId: session.user.id
+      }
+    });
+
+    return NextResponse.json(wallet);
+  } catch (error) {
+    console.error("[WALLETS_POST]", error);
+    return new NextResponse("Internal error", { status: 500 });
+  }
+}

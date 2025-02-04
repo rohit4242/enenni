@@ -6,10 +6,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 interface CurrencyCardProps {
-  type: "USDC" | "BTC" | "ETH" | "USDT" | "AED" | "USD" | "EUR"
+  type: "USDC" | "BTC" | "ETH" | "USDT" | "AED" | "USD" | "EUR" | "GBP"
   balance: string
   isActive?: boolean
-  variant?: "wallet" | "balance"
+  variant?: "wallet" | "bank-account"
 }
 
 export default function CurrencyCard({ 
@@ -43,6 +43,12 @@ export default function CurrencyCard({
             <span className="text-xs font-bold">€</span>
           </div>
         )
+      case "GBP":
+        return (
+          <div className="flex size-6 items-center justify-center rounded-full bg-indigo-500 text-white">
+            <span className="text-xs font-bold">£</span>
+          </div>
+        )
     }
   }
 
@@ -62,11 +68,13 @@ export default function CurrencyCard({
         return "US Dollar"
       case "EUR":
         return "Euro"
+      case "GBP":
+        return "British Pound"
     }
   }
 
   const handleClick = () => {
-    const basePath = variant === "wallet" ? "/wallets" : "/balances"
+    const basePath = variant === "wallet" ? "/wallets" : "/bank-accounts"
     router.push(`${basePath}/${type.toLowerCase()}`)
   }
 

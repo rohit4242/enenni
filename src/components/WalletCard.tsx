@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface WalletCardProps {
   type: "USDC" | "BTC" | "ETH" | "USDT"
   balance: string
   isActive?: boolean
+  loading?: boolean
 }
 
-export default function WalletCard({ type, balance, isActive }: WalletCardProps) {
+export default function WalletCard({ type, balance, isActive, loading }: WalletCardProps) {
   const router = useRouter()
 
   const getCurrencyIcon = () => {
@@ -47,6 +49,12 @@ export default function WalletCard({ type, balance, isActive }: WalletCardProps)
 
   const handleClick = () => {
     router.push(`/wallets/${type.toLowerCase()}`)
+  }
+
+  if (loading) {
+    return (
+      <Skeleton className="h-[76px] w-full rounded-lg" />
+    )
   }
 
   return (

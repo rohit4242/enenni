@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { User } from "lucide-react";
+import { SettingsIcon, User } from "lucide-react";
+import Link from "next/link";
 
 export const UserButton = () => {
   const user = useCurrentUser();
@@ -33,6 +34,12 @@ export const UserButton = () => {
             Logout
           </DropdownMenuItem>
         </LogoutButton>
+        <DropdownMenuItem>
+          <Link href="/settings" className="flex items-center gap-2">
+            <SettingsIcon className="h-4 w-4" />
+            Settings
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

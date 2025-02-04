@@ -25,9 +25,10 @@ const navLinks = [
     label: "Wallets",
   },
   {
-    href: "/balances",
-    label: "Balances",
+    href: "/bank-accounts",
+    label: "Bank Accounts",
   },
+
 ];
 
 export function MainNav({
@@ -39,7 +40,7 @@ export function MainNav({
 
   console.log(pathname);
   const isActiveLink = (href: string) => {
-    if (href === "/wallets" || href === "/balances") {
+    if (href === "/wallets" || href === "/bank-accounts") {
       return pathname.startsWith(href);
     }
     return pathname === href;

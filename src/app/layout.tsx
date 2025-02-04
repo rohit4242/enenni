@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { MainNav } from "@/components/MainNav";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,26 +32,26 @@ export default async function RootLayout({
 
   return (
     <SessionProvider session={session}>
-
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <div className="flex min-h-screen flex-col">
-            <header className="sticky top-0 z-50 w-full border-b bg-background">
-              <div className="container flex h-16 items-center">
-                <MainNav className="mx-6" />
-              
-              </div>
-            </header>
-            <main className="flex-1">
-              <div className="container">
-                {children}
-              </div>
-            </main>
-          </div>
-          <ModalProvider />
-          <Toaster />
-      </body>
-    </html>
+      <QueryProvider>
+        <html lang="en">
+          <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+            <div className="flex min-h-screen flex-col">
+              <header className="sticky top-0 z-50 w-full border-b bg-background">
+                <div className="container flex h-16 items-center">
+                  <MainNav className="mx-6" />
+                </div>
+              </header>
+              <main className="flex-1">
+                <div className="container">
+                  {children}
+                </div>
+              </main>
+            </div>
+            <ModalProvider />
+            <Toaster />
+          </body>
+        </html>
+      </QueryProvider>
     </SessionProvider>
   );
 }

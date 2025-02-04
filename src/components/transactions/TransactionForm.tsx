@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Banknote, Notebook } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -101,7 +101,7 @@ export function TransactionForm({
                       <SelectValue>
                         {field.value && (
                           <div className="flex items-center gap-2">
-                            <Image 
+                            {/* <Image 
                               src={currencies.find(c => c.id === field.value)?.flag ?? ""} 
                               alt={field.value}
                               className="h-5 w-5 rounded-full"
@@ -109,7 +109,9 @@ export function TransactionForm({
                               height={20}
 
 
-                            />
+                            /> */}
+                                                      <Banknote className="h-5 w-5 rounded-full" />
+
                             {field.value}
                           </div>
                         )}
@@ -124,13 +126,15 @@ export function TransactionForm({
                       >
                         <div className="flex items-center gap-2">
                           {currency.flag && (
-                            <Image  
-                              src={currency.flag} 
-                              alt={currency.name}
-                              className="h-5 w-5 rounded-full"
-                              width={20}
-                              height={20}
-                            />
+                            // <Image  
+                            //   src={currency.flag} 
+                            //   alt={currency.name}
+                            //   className="h-5 w-5 rounded-full"
+                            //   width={20}
+                            //   height={20}
+                            // />
+                            <Banknote className="h-5 w-5 rounded-full" />
+
                           )}
 
                           {currency.id}
@@ -161,14 +165,15 @@ export function TransactionForm({
                     <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-muted-foreground">
                       <div className="flex items-center gap-2">
                         {form.watch("currency") && (
-                          <Image
-                            width={20}
-                            height={20}
-                            alt={form.watch("currency")}
-                            src={currencies.find(c => c.id === form.watch("currency"))?.flag ?? ""}
-                            className="h-5 w-5 rounded-full"
+                          // <Image
+                          //   width={20}
+                          //   height={20}
+                          //   alt={form.watch("currency")}
+                          //   src={currencies.find(c => c.id === form.watch("currency"))?.flag ?? ""}
+                          //   className="h-5 w-5 rounded-full"
 
-                          />
+                          // />
+                          <Notebook className="h-5 w-5 rounded-full" />
                         )}
                         {form.watch("currency")}
                       </div>
@@ -217,6 +222,7 @@ export function TransactionForm({
           <Button 
             type="submit" 
             className="w-full h-[52px]"
+            loading={form.formState.isSubmitting}
           >
             {type === "deposit" ? "Continue" : "Proceed"}
           </Button>

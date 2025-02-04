@@ -39,11 +39,11 @@ export default auth((req) => {
     return Response.redirect(new URL("/auth/login", nextUrl));
   }
 
-  if (isLoggedIn && !isPublicRoute && !isAuthRoute) {
-    if (user?.kycStatus !== "APPROVED") {
-      return Response.redirect(new URL("/kyc", nextUrl));
-    }
-  }
+  // if (isLoggedIn && !isPublicRoute && !isAuthRoute) {
+  //   if (user?.kycStatus !== "APPROVED") {
+  //     return Response.redirect(new URL("/kyc", nextUrl));
+  //   }
+  // }
 
   return;
 }) as any; // temporary fix for type issues with beta
