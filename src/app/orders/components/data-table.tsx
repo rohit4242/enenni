@@ -155,7 +155,7 @@ export function OrdersDataTable() {
   }, [rowsPerPage]);
 
   return (
-    <div className="space-y-2 sm:space-y-4">
+    <div className="space-y-2 sm:space-y-4 bg-white rounded-lg p-4 shadow-md">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-2">
           <p className="text-xs sm:text-sm text-muted-foreground">

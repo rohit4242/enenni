@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Transaction } from "@prisma/client"
+import { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Transaction } from "@prisma/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 export const columns: ColumnDef<Transaction>[] = [
   {
@@ -41,9 +41,7 @@ export const columns: ColumnDef<Transaction>[] = [
     accessorKey: "transactionHash",
     header: "Hash",
     cell: ({ row }) => (
-      <div className="font-medium">
-        {row.getValue("transactionHash")}
-      </div>
+      <div className="font-medium">{row.getValue("transactionHash")}</div>
     ),
   },
   {
@@ -57,19 +55,13 @@ export const columns: ColumnDef<Transaction>[] = [
           Type
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => {
-      const type = row.getValue("type") as string
-      const variant = type.toLowerCase() === "deposit" ? "deposit" : "withdraw"
-      return (
-        <Badge variant={variant}>
-          {type}
-        </Badge>
-      )
-
+      const type = row.getValue("type") as string;
+      const variant = type.toLowerCase() === "deposit" ? "deposit" : "withdraw";
+      return <Badge variant={variant}>{type}</Badge>;
     },
-
   },
   {
     accessorKey: "amount",
@@ -82,37 +74,41 @@ export const columns: ColumnDef<Transaction>[] = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row, table }) => {
-      const amount = parseFloat(row.getValue("amount"))
-      const formatted = new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 8,
-      }).format(amount)
+    cell: ({ row }) => {
+      const amountValue = row.getValue("amount");
+      const amount =
+        typeof amountValue === "string" || typeof amountValue === "number"
+          ? parseFloat(amountValue.toString())
+          : 0;
+
+      // Ensure currency code is uppercase
+      const currency = (
+        row.original.fiatCurrency ||
+        row.original.cryptoType ||
+        "USD"
+      ).toUpperCase();
 
       return (
         <div className="font-medium">
-          {formatted} {row.original.currency}
+          {row.original.cryptoAmount} {currency}
         </div>
-
-      )
+      );
     },
   },
+
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
-      const variant = status === "COMPLETED" 
-        ? "success"
-        : status === "PENDING" 
-        ? "warning" 
-        : "destructive"
-      
-      return (
-        <Badge variant={variant}>
-          {status}
-        </Badge>
-      )
+      const status = row.getValue("status") as string;
+      const variant =
+        status === "APPROVED"
+          ? "success"
+          : status === "PENDING"
+          ? "warning"
+          : "destructive";
+
+      return <Badge variant={variant}>{status}</Badge>;
     },
   },
   {
@@ -128,16 +124,14 @@ export const columns: ColumnDef<Transaction>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div>
-          {new Date(row.getValue("createdAt")).toLocaleDateString()}
-        </div>
-      )
+        <div>{new Date(row.getValue("createdAt")).toLocaleDateString()}</div>
+      );
     },
   },
   {
     id: "actions",
     cell: ({ row }) => {
-      const transaction = row.original
+      const transaction = row.original;
 
       return (
         <DropdownMenu>
@@ -150,18 +144,24 @@ export const columns: ColumnDef<Transaction>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => transaction.transactionHash && navigator.clipboard.writeText(transaction.transactionHash)}
+              onClick={() =>
+                transaction.transactionHash &&
+                navigator.clipboard.writeText(transaction.transactionHash)
+              }
             >
               Copy transaction hash
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => transaction.referenceId && navigator.clipboard.writeText(transaction.referenceId)}
+              onClick={() =>
+                transaction.referenceId &&
+                navigator.clipboard.writeText(transaction.referenceId)
+              }
             >
               Copy reference ID
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      );
     },
   },
-] 
+];

@@ -3,10 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { MainNav } from "@/components/MainNav";
-import { SessionProvider } from "next-auth/react";
-import { auth } from "@/auth";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ModalProvider } from "@/components/providers/modal-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
+import { ClientOnly } from "@/components/ClientOnly";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,30 +28,31 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
 
   return (
-    <SessionProvider session={session}>
-      <QueryProvider>
-        <html lang="en">
-          <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <AuthProvider>
+          <QueryProvider>
             <div className="flex min-h-screen flex-col">
-              <header className="sticky top-0 z-50 w-full border-b bg-background">
-                <div className="container flex h-16 items-center">
-                  <MainNav className="mx-6" />
-                </div>
-              </header>
-              <main className="flex-1">
-                <div className="container">
-                  {children}
-                </div>
-              </main>
+              <ClientOnly>
+                <header className="sticky top-0 z-50 w-full bg-teal-600">
+                  <div className="container max-w-screen-xl mx-auto flex h-16 items-center">
+                    <MainNav className="mx-6" />
+                  </div>
+                </header>
+              </ClientOnly>
+              {children}
             </div>
-            <ModalProvider />
-            <Toaster />
-          </body>
-        </html>
-      </QueryProvider>
-    </SessionProvider>
+            <ClientOnly>
+              <ModalProvider />
+              <Toaster />
+            </ClientOnly>
+          </QueryProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

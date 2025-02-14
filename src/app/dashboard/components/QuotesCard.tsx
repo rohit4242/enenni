@@ -1,37 +1,40 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Clock, Loader2 } from "lucide-react";
+import { Check, Clock, Loader2, Trash2 } from "lucide-react";
+import { useQuotes, useAcceptQuote, useClearQuotes } from "@/hooks/use-quotes";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Quote } from "@prisma/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type Quote = {
-  id: string;
-  amount: string | number;
-  currency: string;
-  quoteRate: string | number;
-  status: "ACTIVE" | "EXPIRED" | "USED";
-  createdAt: string;
-  expiresAt: string;
-};
+// type Quote = {
+//   id: string;
+//   amount: string | number;
+//   currency: string;
+//   quoteRate: string | number;
+//   status: "ACTIVE" | "EXPIRED" | "USED";
+//   createdAt: string;
+//   expiresAt: string;
+// };
 
 function QuoteItem({
   quote,
-  onConfirm,
-  loading,
+  onAccept,
+  isAcceptingQuote,
 }: {
   quote: Quote;
-  onConfirm: (id: string) => void;
-  loading: boolean;
+  onAccept: (id: string) => void;
+  isAcceptingQuote: boolean;
 }) {
   const isExpired = new Date(quote.expiresAt) < new Date();
   const timeLeft = Math.max(
     0,
     Math.floor((new Date(quote.expiresAt).getTime() - Date.now()) / 1000)
   );
-  const totalTime = 5; // 30 seconds total
+  const totalTime = 7; // 30 seconds total
   const progress = (timeLeft / totalTime) * 100;
 
   return (
@@ -49,7 +52,7 @@ function QuoteItem({
       {/* Content */}
       <div className="relative space-y-1 z-10">
         <p className="font-medium">
-          {quote.amount} {quote.currency}
+          {quote.amount.toString()} {quote.currency}
         </p>
         <div className="flex items-center text-sm text-muted-foreground">
           <Clock className="mr-1 h-4 w-4" />
@@ -57,169 +60,130 @@ function QuoteItem({
         </div>
       </div>
       <Button
-        onClick={() => onConfirm(quote.id)}
-        disabled={isExpired || loading}
+        onClick={() => onAccept(quote.id)}
+        disabled={isExpired}
         size="sm"
         className="relative ml-4 z-10"
+        loading={isAcceptingQuote}
       >
-        {loading ? (
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading...
-          </div>
-        ) : (
-          <>
-            <Check className="mr-1 h-4 w-4" />
-            Confirm
-          </>
-        )}
+        Accept
       </Button>
     </div>
   );
 }
 
 export function QuotesCard() {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [loadingQuotes, setLoadingQuotes] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [clearingQuotes, setClearingQuotes] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(Date.now());
+  const { data: quotes, isLoading, error } = useQuotes();
+  const { mutate: acceptQuote, isPending: isAcceptingQuote } = useAcceptQuote();
+  const { mutate: clearQuotes, isPending: isClearingQuotes } = useClearQuotes();
   const { toast } = useToast();
 
-  const fetchQuotes = useCallback(async () => {
+  const activeQuotes = quotes?.filter(
+    (quote) => quote.status === "ACTIVE" && new Date(quote.expiresAt) > new Date()
+  );
+  const expiredQuotes = quotes?.filter(
+    (quote) => quote.status === "EXPIRED" || new Date(quote.expiresAt) <= new Date()
+  );
+
+  const handleAcceptQuote = async (quoteId: string) => {
     try {
-      const response = await fetch("/api/quotes");
-      if (!response.ok) throw new Error("Failed to fetch quotes");
-      const data = await response.json();
-      setQuotes(data);
-      setLastUpdated(Date.now());
+      await acceptQuote(quoteId);
     } catch (error) {
-      console.error("Error fetching quotes:", error);
-    }
-  }, []);
-
-  // Only fetch quotes when there are changes
-  useEffect(() => {
-    const socket = new WebSocket("ws://localhost:3000/api/quotes/ws");
-
-    socket.onmessage = (event) => {
-      const newQuotes = JSON.parse(event.data);
-      setQuotes(newQuotes);
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, []);
-
-  // Manual refresh button handler
-  const handleManualRefresh = async () => {
-    await fetchQuotes();
-  };
-
-  const handleConfirmTrade = async (quoteId: string) => {
-    try {
-      setLoadingQuotes((prev) => ({ ...prev, [quoteId]: true }));
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quoteId }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to confirm trade");
-      }
-
-      toast({
-        title: "Trade Confirmed",
-        description: "Your trade has been successfully executed.",
-      });
-
-      setQuotes((current) => current.filter((q) => q.id !== quoteId));
-    } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to accept quote. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoadingQuotes((prev) => ({ ...prev, [quoteId]: false }));
     }
   };
 
-  const handleClearQuotes = async () => {
+  const handleClearAll = async () => {
     try {
-      setClearingQuotes(true);
-      const response = await fetch("/api/quotes", {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to clear quotes");
-
-      setQuotes([]);
+      await clearQuotes();
       toast({
-        title: "Quotes Cleared",
-        description: "All quotes have been successfully cleared.",
+        title: "Success",
+        description: "All quotes cleared successfully",
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to clear quotes",
+        description: "Failed to clear quotes",
         variant: "destructive",
       });
-    } finally {
-      setClearingQuotes(false);
     }
   };
+
+  if (isLoading) return <Skeleton className="h-[200px] w-full" />;
+  if (error) return <div>Failed to load quotes</div>;
 
   return (
     <Card className="h-auto">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle>Active Quotes</CardTitle>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleManualRefresh}>
-            Refresh
-          </Button>
-          {quotes.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearQuotes}
-              disabled={clearingQuotes}
-            >
-              {clearingQuotes ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Clearing...
-                </div>
-              ) : (
-                "Clear All"
-              )}
-            </Button>
+        <CardTitle>Quotes</CardTitle>
+        <Button
+          onClick={handleClearAll}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          disabled={isClearingQuotes}
+        >
+          {isClearingQuotes ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
           )}
-        </div>
+          Clear All
+        </Button>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-48">
-          <div className="space-y-4">
-            {quotes.length === 0 ? (
-              <div className="text-center text-muted-foreground p-4">
-                No active quotes
+        <Tabs defaultValue="active">
+          <TabsList className="mb-4">
+            <TabsTrigger value="active">
+              Active ({activeQuotes?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="expired">
+              Expired ({expiredQuotes?.length || 0})
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="active">
+            <ScrollArea className="h-48">
+              <div className="space-y-4">
+                {activeQuotes?.map((quote) => (
+                  <QuoteItem
+                    key={quote.id}
+                    quote={quote}
+                    onAccept={handleAcceptQuote}
+                    isAcceptingQuote={isAcceptingQuote}
+                  />
+                ))}
+                {!activeQuotes?.length && (
+                  <div className="text-center text-muted-foreground p-4">
+                    No active quotes
+                  </div>
+                )}
               </div>
-            ) : (
-              quotes.map((quote) => (
-                <QuoteItem
-                  key={quote.id}
-                  quote={quote}
-                  onConfirm={handleConfirmTrade}
-                  loading={loadingQuotes[quote.id]}
-                />
-              ))
-            )}
-          </div>
-        </ScrollArea>
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent value="expired">
+            <ScrollArea className="h-80">
+              <div className="space-y-4">
+                {expiredQuotes?.map((quote) => (
+                  <QuoteItem
+                    key={quote.id}
+                    quote={quote}
+                    onAccept={handleAcceptQuote}
+                    isAcceptingQuote={isAcceptingQuote}
+                  />
+                ))}
+                {!expiredQuotes?.length && (
+                  <div className="text-center text-muted-foreground p-4">
+                    No expired quotes
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

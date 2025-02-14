@@ -33,39 +33,52 @@ export function NewWalletModal() {
   const form = useForm<NewWalletFormValues>({
     resolver: zodResolver(newWalletSchema),
     defaultValues: {
+      chain: "",
       address: "",
       nickname: "",
-      type: "First party",
       currency: "BTC",
+      type: "First party",
     },
   });
 
   const onSubmit = async (values: NewWalletFormValues) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/wallets", {
+
+      if (!values || typeof values !== 'object') {
+        throw new Error("Invalid wallet data");
+      }
+
+      const response = await fetch("/api/crypto-wallets", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          walletAddress: values.address,
+          chain: values.chain,
+          nickname: values.nickname,
+          type: values.type,
+          cryptoType: values.currency,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create wallet");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create wallet");
       }
 
       toast({
         title: "Success",
         description: "Wallet created successfully",
       });
-      
+
       form.reset();
       onClose();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create wallet",
+        description: error instanceof Error ? error.message : "Failed to create wallet",
         variant: "destructive",
       });
     } finally {
@@ -75,16 +88,18 @@ export function NewWalletModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogTitle>Add New Wallet</DialogTitle>
+      <DialogContent className="max-w-md min-w-[400px]">
+        <DialogTitle>Add an address</DialogTitle>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+
             <FormField
               control={form.control}
               name="currency"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Currency</FormLabel>
+                  <FormLabel>Token</FormLabel>
                   <Select
                     disabled={loading}
                     onValueChange={field.onChange}
@@ -92,7 +107,7 @@ export function NewWalletModal() {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
+                        <SelectValue placeholder="Select token" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -109,10 +124,35 @@ export function NewWalletModal() {
 
             <FormField
               control={form.control}
+              name="chain"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Chain</FormLabel>
+                  <Select
+                    disabled={loading}
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select chain" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="TRON">TRON</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Wallet Address</FormLabel>
+                  <FormLabel>Wallet address</FormLabel>
                   <FormControl>
                     <Input disabled={loading} {...field} />
                   </FormControl>
@@ -126,9 +166,13 @@ export function NewWalletModal() {
               name="nickname"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nickname (Optional)</FormLabel>
+                  <FormLabel>Nickname</FormLabel>
                   <FormControl>
-                    <Input disabled={loading} {...field} />
+                    <Input 
+                      disabled={loading} 
+                      {...field} 
+                      placeholder="Eg. btc01" 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -161,6 +205,7 @@ export function NewWalletModal() {
               )}
             />
 
+
             <div className="flex justify-end space-x-2 pt-4">
               <Button
                 type="button"
@@ -168,10 +213,14 @@ export function NewWalletModal() {
                 disabled={loading}
                 onClick={onClose}
               >
-                Cancel
+                Back
               </Button>
-              <Button type="submit" disabled={loading}>
-                Add Wallet
+              <Button 
+                type="submit" 
+                disabled={loading}
+                loading={loading}
+              >
+                Submit
               </Button>
             </div>
           </form>

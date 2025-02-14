@@ -3,36 +3,32 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
 
-interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
+interface SidebarNavProps {
   items: {
     href: string
     title: string
   }[]
+  className?: string
 }
 
-export function SidebarNav({ className, items, ...props }: SidebarNavProps) {
+export function SidebarNav({ className, items }: SidebarNavProps) {
   const pathname = usePathname()
 
   return (
     <nav
       className={cn(
-        "flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 lg:overflow-x-visible",
+        "flex flex-col gap-2 p-4 bg-teal-500 text-white rounded-lg shadow-md",
         className
       )}
-      {...props}
     >
       {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}
           className={cn(
-            buttonVariants({ variant: "ghost" }),
-            pathname === item.href
-              ? "bg-muted hover:bg-muted"
-              : "hover:bg-transparent hover:underline",
-            "justify-start whitespace-nowrap flex-shrink-0"
+            "w-full justify-center font-medium hover:bg-white/20 hover:text-white border-none focus-visible:ring-offset-0 focus-visible:ring-transparent outline-none text-white focus:bg-white/30 transition p-2 rounded-md",
+            pathname === item.href ? "bg-white/10 text-white" : "bg-transparent"
           )}
         >
           {item.title}
@@ -40,4 +36,4 @@ export function SidebarNav({ className, items, ...props }: SidebarNavProps) {
       ))}
     </nav>
   )
-} 
+}

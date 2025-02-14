@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { useQuery } from "@tanstack/react-query"
+import { useMounted } from "@/hooks/use-mounted"
 import {
   ColumnFiltersState,
   SortingState,
@@ -31,20 +33,45 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { columns } from "./columns"
-import { WalletWithTransactions } from "@/hooks/use-wallet"
+import { Transaction } from "@prisma/client"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface WalletsDataTableProps {
-  wallet: WalletWithTransactions | null
+  transactions: Transaction[] | null
 }
 
-export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
+export function WalletsDataTable({ transactions }: WalletsDataTableProps) {
+  const mounted = useMounted()
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [activeTab, setActiveTab] = React.useState<string>("pending")
+
+  const tabs = [
+    { value: "pending", label: "Pending" },
+    { value: "approved", label: "Approved" },
+    { value: "rejected", label: "Rejected" },
+  ]
+
+  const filteredTransactions = React.useMemo(() => {
+    if (!mounted) return []
+    return transactions?.filter((transaction) => {
+      if (activeTab === "pending") return transaction.status === "PENDING"
+      if (activeTab === "approved") return transaction.status === "APPROVED"
+      if (activeTab === "rejected") return transaction.status === "REJECTED"
+      return true
+    }) ?? []
+  }, [transactions, activeTab, mounted])
 
   const table = useReactTable({
-    data: wallet?.transactions ?? [],
+    data: filteredTransactions,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -62,10 +89,24 @@ export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
     },
   })
 
-  if (!wallet?.transactions?.length) {
+  if (!mounted) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <div className="rounded-md border">
+          <div className="h-24 p-4">
+            <Skeleton className="h-full w-full" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!transactions?.length) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
         <h3 className="text-lg font-semibold mb-2">No Transactions Yet</h3>
+
         <p className="text-sm text-muted-foreground mb-4">
           Start by making a deposit to your wallet.
         </p>
@@ -82,7 +123,6 @@ export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-
         <Input
           placeholder="Filter by Amount..."
           value={(table.getColumn("amount")?.getFilterValue() as string) ?? ""}
@@ -118,6 +158,25 @@ export function WalletsDataTable({ wallet }: WalletsDataTableProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+        {tabs.map((tab) => (
+          <TabsTrigger 
+            key={tab.value} 
+            value={tab.value} 
+            className="flex items-center gap-2"
+          >
+            {tab.label}
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-xs">
+                {transactions?.filter(item => item.status === tab.value.toUpperCase()).length}
+              </span>
+          </TabsTrigger>
+        ))}
+        </TabsList>
+      </Tabs>
+
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>

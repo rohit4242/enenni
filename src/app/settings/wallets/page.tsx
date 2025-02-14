@@ -22,7 +22,9 @@ export default function WalletsPage() {
         </Button>
       }
     >
-      <WalletsDataTable />
+      <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md">
+        <WalletsDataTable />
+      </div>
     </PageLayout>
   )
 } 

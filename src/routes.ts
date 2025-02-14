@@ -3,6 +3,7 @@ export const publicRoutes = [
   "/dashboard",
   "/auth/verify",
   "/kyc",
+  "/api/uploadthing",
 ];
 
 export const authRoutes = [

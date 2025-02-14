@@ -69,6 +69,11 @@ model TwoFactorConfirmation {
   @@unique([userId])
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
 // Core Business Models
 model User {
   id                   String    @id @default(cuid())
@@ -84,67 +89,107 @@ model User {
   kycSubmittedAt       DateTime?
   kycApprovedAt        DateTime?
   isTwoFactorEnabled   Boolean   @default(false)
-  
+  role                 Role?   @default(USER)
   // Relations
   accounts             Account[]
   sessions             Session[]
-  wallets              Wallet[]
   orders               Order[]
-  bankAccounts         BankAccount[]
+  fiatBalances         FiatBalance[]
+  cryptoBalances       CryptoBalance[]
+  userBankAccounts     UserBankAccount[]
+  userCryptoWallets    UserCryptoWallet[]
+  transactions         Transaction[]
+
   twoFactorConfirmation TwoFactorConfirmation?
 }
 
-model Wallet {
-  id          String     @id @default(cuid())
-  address     String     @unique
-  nickname    String?
-  type        String
-  status      String
-  balance     Decimal    @default(0)
-  currency    String
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  transactions Transaction[] @relation("WalletTransactions")
+model FiatBalance {
+  id         String      @id @default(uuid())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  currency   CurrencyType
+  balance    Float       @default(0)
+  transactions Transaction[] @relation("FiatBalanceTransaction")
+
+  @@unique([userId, currency])
 }
 
-model BankAccount {
-  id              String      @id @default(cuid())
-  accountHolder   String
-  bankName        String
-  accountNumber   String?
-  iban            String?     @unique
-  currency        String
-  bankAddress     String?
-  bankCountry     String
-  userId          String
-  balance         Decimal     @default(0)
-  user            User        @relation(fields: [userId], references: [id])
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  transactions    Transaction[] @relation("BankTransactions")
+model CryptoBalance {
+  id         String      @id @default(uuid())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  cryptoType CryptoType
+  balance    Float       @default(0)
+  transactions Transaction[] @relation("CryptoBalanceTransaction")
+  walletAddress String?
+  @@unique([userId, cryptoType])
+}
+
+model UserBankAccount {
+  id           String       @id @default(uuid())
+  user         User         @relation(fields: [userId], references: [id])
+  userId       String
+  bankName     String
+  accountHolder String
+  accountNumber String
+  iban          String
+  currency      CurrencyType
+  status        TransactionStatus @default(PENDING)
+  proofDocumentUrl String?
+  verifyIban String?
+  verifyAccountNumber String?
+  bankAddress String?
+  bankCountry String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model UserCryptoWallet {
+  id            String       @id @default(uuid())
+  user          User         @relation(fields: [userId], references: [id])
+  userId        String
+  walletAddress String
+  cryptoType    CryptoType
+  nickname      String?
+  type          String?
+  status        TransactionStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Transaction {
-  id              String      @id @default(cuid())
-  type            TransactionType
-  amount          Decimal
-  currency        String
-  status          TransactionStatus
-  referenceId     String      @unique
-  transactionHash String?     @unique
-  description     String?
-  createdAt       DateTime    @default(now())
+  id             String           @id @default(uuid())
+  user           User             @relation(fields: [userId], references: [id])
+  userId         String
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
   
-  // Relations
-  walletId        String?
-  wallet          Wallet?     @relation("WalletTransactions", fields: [walletId], references: [id])
-  bankAccountId   String?
-  bankAccount     BankAccount? @relation("BankTransactions", fields: [bankAccountId], references: [id])
+  // Fiat transaction fields
+  fiatAmount     Float?
+  fiatCurrency   CurrencyType?
+  
+  // Crypto transaction fields
+  cryptoAmount   Float?
+  cryptoType     CryptoType?
 
-  @@index([walletId])
-  @@index([bankAccountId])
+  // transaction hash
+  transactionHash String?
+  referenceId     String?
+  description     String?
+  
+  // Buy/Sell fields
+  exchangeRate   Float?
+  
+  // Add these relation fields
+  fiatBalance    FiatBalance?     @relation("FiatBalanceTransaction", fields: [fiatBalanceId], references: [id])
+  cryptoBalance  CryptoBalance?   @relation("CryptoBalanceTransaction", fields: [cryptoBalanceId], references: [id])
+  
+
+  // Fiat transaction fields
+  fiatBalanceId  String?
+  cryptoBalanceId String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 model Order {
@@ -154,7 +199,7 @@ model Order {
   quantity      Decimal
   pricePerToken Decimal
   totalAmount   Decimal
-  status        String
+  status        OrderStatus
   userId        String
   user          User      @relation(fields: [userId], references: [id])
   createdAt     DateTime  @default(now())
@@ -169,20 +214,55 @@ model Quote {
   quoteRate   Decimal
   type        String
   status      String
+  crypto      String
   createdAt   DateTime  @default(now())
   expiresAt   DateTime
 }
 
-// Enums
 enum TransactionType {
-  DEPOSIT
-  WITHDRAWAL
-  TRANSFER
+  FIAT_DEPOSIT
+  FIAT_WITHDRAWAL
+  CRYPTO_DEPOSIT
+  CRYPTO_WITHDRAWAL
+  BUY_CRYPTO
+  SELL_CRYPTO
 }
 
 enum TransactionStatus {
   PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CurrencyType {
+  USD
+  AED
+}
+
+enum CryptoType {
+  USDT
+  USDC
+  BTC
+  ETH
+}
+
+enum OrderStatus {
+  PENDING
   COMPLETED
-  FAILED
   CANCELLED
+}
+
+// Add this new model for Enenni bank accounts
+model EnnenniBankAccount {
+  id            String       @id @default(uuid())
+  currency      CurrencyType
+  accountName   String
+  accountNumber String
+  iban          String
+  bankName      String
+  swiftCode     String
+  description   String?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }

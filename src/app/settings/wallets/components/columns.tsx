@@ -9,12 +9,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Wallet } from "@prisma/client"
+import { UserCryptoWallet } from "@prisma/client"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
 
-export const columns: ColumnDef<Wallet>[] = [
+const cryptoLogos = {
+  BTC: '/icons/btc.svg',
+  ETH: '/icons/eth.svg',
+  USDT: '/icons/usdt.svg',
+  USDC: '/icons/usdc.svg'
+}
+
+export const columns: ColumnDef<UserCryptoWallet>[] = [
   {
-    accessorKey: "address",
+    accessorKey: "walletAddress",
     header: ({ column }) => {
       return (
         <Button
@@ -26,40 +34,31 @@ export const columns: ColumnDef<Wallet>[] = [
         </Button>
       )
     },
+    cell: ({ row }) => {
+      const wallet = row.original
+      const logo = cryptoLogos[wallet.cryptoType] || '/icons/default-crypto.svg'
+      
+      return (
+        <div className="flex items-center gap-2">
+          <Image 
+            src={logo}
+            alt={wallet.cryptoType}
+            width={20}
+            height={20}
+            className="w-5 h-5"
+          />
+          <span>{wallet.walletAddress}</span>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "type",
+    header: "Wallet Owner",
   },
   {
     accessorKey: "nickname",
     header: "Nickname",
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
-  },
-  {
-    accessorKey: "currency",
-    header: "Currency",
-  },
-  {
-    accessorKey: "balance",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Balance
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const balance = parseFloat(row.getValue("balance"))
-      const formatted = new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 8,
-      }).format(balance)
-      return <div className="font-medium">{formatted}</div>
-    },
   },
   {
     accessorKey: "status",
@@ -67,7 +66,7 @@ export const columns: ColumnDef<Wallet>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string
       return (
-        <Badge variant={status === "APPROVED" ? "success" : "secondary"}>
+        <Badge variant={status === "APPROVED" ? "success" : "warning"}>
           {status}
         </Badge>
       )
@@ -86,7 +85,7 @@ export const columns: ColumnDef<Wallet>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(wallet.address)}>
+            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(wallet.walletAddress)}>
               Copy Address
             </DropdownMenuItem>
             <DropdownMenuItem>View Transactions</DropdownMenuItem>
@@ -95,4 +94,4 @@ export const columns: ColumnDef<Wallet>[] = [
       )
     },
   },
-] 
+]

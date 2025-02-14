@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { toast, useToast } from "@/hooks/use-toast";
 import { BeatLoader } from "react-spinners";
-import { useToast } from "@/hooks/use-toast";
 import Script from "next/script";
+import { Button } from "@/components/ui/button";
 
 declare global {
   interface Window {
@@ -23,6 +23,7 @@ export default function KYCPage() {
   const sdkRef = useRef<any>(null);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState(null);
 
   const getNewAccessToken = async (userId: string) => {
     try {
@@ -39,6 +40,24 @@ export default function KYCPage() {
       throw error;
     }
   };
+
+  useEffect(() => {
+    async function checkVerification() {
+      try {
+        const response = await fetch(`/api/sumsub/check-verification?applicantId=679f8a35dc63600a2574e5f8`);
+        const data = await response.json();
+        setIsVerified(data.isVerified);
+      } catch (error) {
+        console.error('Error checking verification status:', error);
+      }
+    }
+
+
+    checkVerification();
+  }, [session?.user?.id]);
+
+
+  console.log("isVerified: ", isVerified)
 
   const handleStartKYC = async () => {
     if (!session?.user?.id) {

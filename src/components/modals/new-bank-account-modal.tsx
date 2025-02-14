@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNewBankAccountModal } from "@/hooks/use-new-bank-account";
-import { newBankAccountSchema, type NewBankAccountFormValues } from "@/lib/schemas/bank-account";
+import { newBankAccountSchema } from "@/lib/schemas/bank-account";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Form,
@@ -24,66 +24,104 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { FileUpload } from "@/components/ui/upload-dropzone";
+import { CurrencyType } from "@prisma/client";
+import { useQueryClient } from "@tanstack/react-query";
 
-const CURRENCIES = [
-  { id: "USD", name: "US Dollar" },
-  { id: "EUR", name: "Euro" },
-  { id: "GBP", name: "British Pound" },
-  { id: "CHF", name: "Swiss Franc" },
-];
+// Update the form values type
+type NewBankAccountFormValues = {
+  accountHolderName: string;
+  accountType: "IBAN" | "ACCOUNT_NUMBER";
+  iban?: string;
+  verifyIban?: string;
+  accountNumber?: string;
+  verifyAccountNumber?: string;
+  bankAddress: string;
+  bankCountry: string;
+  proofDocumentUrl: string;
+  currency: CurrencyType;
+};
+
 
 const COUNTRIES = [
-  { id: "US", name: "United States" },
-  { id: "GB", name: "United Kingdom" },
-  { id: "DE", name: "Germany" },
-  { id: "FR", name: "France" },
-  { id: "CH", name: "Switzerland" },
+  { id: "AED", name: "United Arab Emirates" },
+  { id: "USD", name: "United States" },
+
+  // Add more countries as needed
 ];
 
 export function NewBankAccountModal() {
   const { isOpen, onClose } = useNewBankAccountModal();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string>("");
+  const queryClient = useQueryClient();
 
   const form = useForm<NewBankAccountFormValues>({
     resolver: zodResolver(newBankAccountSchema),
     defaultValues: {
-      accountHolder: "",
-      bankName: "",
-      accountNumber: "",
-      iban: "",
-      currency: "",
+      accountHolderName: "Rohit",
+      accountType: "IBAN",
       bankAddress: "",
       bankCountry: "",
+      proofDocumentUrl: "",
+      currency: CurrencyType.AED,
     },
   });
+
+  const accountType = form.watch("accountType");
 
   const onSubmit = async (values: NewBankAccountFormValues) => {
     try {
       setLoading(true);
+
+      // Validate IBAN/Account number match
+      if (values.accountType === "IBAN" && values.iban !== values.verifyIban) {
+        form.setError("verifyIban", { message: "IBAN numbers do not match" });
+        return;
+      }
+
+      if (values.accountType === "ACCOUNT_NUMBER" && 
+          values.accountNumber !== values.verifyAccountNumber) {
+        form.setError("verifyAccountNumber", { 
+          message: "Account numbers do not match" 
+        });
+        return;
+      }
+
       const response = await fetch("/api/bank-accounts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          proofDocumentUrl: uploadedUrl,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create bank account");
+        const error = await response.text();
+        throw new Error(error);
       }
+
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({ queryKey: ["bank-accounts"] });
 
       toast({
         title: "Success",
         description: "Bank account added successfully",
       });
-      
+
       form.reset();
       onClose();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add bank account",
+        description: error instanceof Error ? error.message : "Failed to add bank account",
         variant: "destructive",
       });
     } finally {
@@ -93,47 +131,121 @@ export function NewBankAccountModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogTitle>Add New Bank Account</DialogTitle>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="accountHolder"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Account Holder Name</FormLabel>
-                  <FormControl>
-                    <Input disabled={loading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="bankName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bank Name</FormLabel>
-                  <FormControl>
-                    <Input disabled={loading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
+      <DialogContent className="max-h-[90vh] ">
+        <ScrollArea className="max-h-[calc(90vh-4rem)] ">
+          <DialogTitle>Add New Bank Account</DialogTitle>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="accountNumber"
+                name="accountHolderName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Account Number</FormLabel>
+                    <FormLabel>Account holder name</FormLabel>
                     <FormControl>
                       <Input disabled={loading} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="accountType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Provide</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="IBAN" id="iban" />
+                          <label htmlFor="iban">IBAN</label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="ACCOUNT_NUMBER" id="account" />
+                          <label htmlFor="account">
+                            Account number (if IBAN not available)
+                          </label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {accountType === "IBAN" ? (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="iban"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>IBAN</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="verifyIban"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Verify IBAN</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              ) : (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="accountNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Number</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="verifyAccountNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Verify Account Number</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              <FormField
+                control={form.control}
+                name="bankAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bank address</FormLabel>
+                    <FormControl>
+                      <Textarea disabled={loading} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -142,107 +254,83 @@ export function NewBankAccountModal() {
 
               <FormField
                 control={form.control}
-                name="iban"
+                name="bankCountry"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>IBAN</FormLabel>
-                    <FormControl>
-                      <Input disabled={loading} {...field} />
-                    </FormControl>
+                    <FormLabel>Bank country</FormLabel>
+                    <Select
+                      disabled={loading}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country.id} value={country.id}>
+                            {country.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            <FormField
-              control={form.control}
-              name="currency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Currency</FormLabel>
-                  <Select
-                    disabled={loading}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
+              <FormField
+                control={form.control}
+                name="proofDocumentUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Upload proof</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
+                      <FileUpload
+                        endpoint="imageUploader"
+                        onChange={(url) => {
+                          console.log("URL: ", url);
+                          if (url) {
+                            field.onChange(url);
+                            setUploadedUrl(url);
+                          }
+                        }}
+
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {CURRENCIES.map((currency) => (
-                        <SelectItem key={currency.id} value={currency.id}>
-                          {currency.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    {uploadedUrl && (
+                      <p className="text-sm text-muted-foreground">
+                        File uploaded successfully
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Eg. Cancelled cheque, bank statement, IBAN certificate
+                      etc.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="bankAddress"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bank Address</FormLabel>
-                  <FormControl>
-                    <Input disabled={loading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="bankCountry"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bank Country</FormLabel>
-                  <Select
-                    disabled={loading}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country.id} value={country.id}>
-                          {country.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={loading}
-                onClick={onClose}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading} loading={loading}>
-                Add Bank Account
-              </Button>
-            </div>
-          </form>
-        </Form>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={onClose}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  Submit
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
-} 
+}

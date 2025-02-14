@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
+const { PrismaClient, TransactionStatus, TransactionType, CryptoType, CurrencyType } = require('@prisma/client')
 const { hash } = require('bcryptjs')
 
 const db = new PrismaClient()
@@ -16,147 +16,107 @@ async function main() {
       },
     })
   
-    // Create bank accounts
-    const bankAccounts = [
-      {
-        accountHolder: "Test User",
-        bankName: "Emirates NBD",
-        accountNumber: "1234567890",
-        iban: "AE123456789012345678901",
-        currency: "AED",
-        bankAddress: "Dubai, UAE",
-        bankCountry: "United Arab Emirates",
-        balance: 50000.00,
-        user: { connect: { id: user.id } }
-      },
-      {
-        accountHolder: "Test User",
-        bankName: "HSBC",
-        accountNumber: "0987654321",
-        iban: "GB123456789012345678902",
-        currency: "GBP",
-        bankAddress: "London, UK",
-        bankCountry: "United Kingdom",
-        balance: 25000.00,
-        user: { connect: { id: user.id } }
-      }
+    // Create crypto balances
+    const cryptoBalances = [
+      { cryptoType: CryptoType.BTC, balance: 2.5 },
+      { cryptoType: CryptoType.ETH, balance: 15.7 },
+      { cryptoType: CryptoType.USDT, balance: 10000 },
+      { cryptoType: CryptoType.USDC, balance: 15000 },
     ]
-
-    for (const account of bankAccounts) {
-      const bankAccount = await db.bankAccount.upsert({
-        where: { iban: account.iban },
-        update: {},
-        create: account
+  
+    for (const crypto of cryptoBalances) {
+      const balance = await db.cryptoBalance.upsert({
+        where: {
+          userId_cryptoType: {
+            userId: user.id,
+            cryptoType: crypto.cryptoType,
+          },
+        },
+        update: { balance: crypto.balance },
+        create: {
+          userId: user.id,
+          cryptoType: crypto.cryptoType,
+          balance: crypto.balance,
+        },
       })
-
-      // Create transactions for each bank account
+  
+      // Create crypto transactions
       const transactions = [
         {
-          type: "DEPOSIT",
-          amount: 10000.00,
-          currency: account.currency,
-          status: "COMPLETED",
-          referenceId: `DEP_${account.currency}_${Date.now()}_1`,
-          transactionHash: `HASH_${account.currency}_${Date.now()}_1`,
-          description: "Initial deposit",
-          bankAccount: { connect: { id: bankAccount.id } }
+          type: TransactionType.CRYPTO_DEPOSIT,
+          cryptoAmount: crypto.balance * 0.4,
+          cryptoType: crypto.cryptoType,
+          status: TransactionStatus.COMPLETED,
+          userId: user.id,
+          transactionHash: `0x${crypto.cryptoType}_${Date.now()}_1`,
+          referenceId: `DEP_${crypto.cryptoType}_${Date.now()}_1`,
+          description: `${crypto.cryptoType} Deposit`,
         },
         {
-          type: "WITHDRAWAL",
-          amount: 5000.00,
-          currency: account.currency,
-          status: "PENDING",
-          referenceId: `WIT_${account.currency}_${Date.now()}_2`,
-          transactionHash: `HASH_${account.currency}_${Date.now()}_2`,
-          description: "Withdrawal request",
-          bankAccount: { connect: { id: bankAccount.id } }
+          type: TransactionType.CRYPTO_WITHDRAWAL,
+          cryptoAmount: crypto.balance * 0.1,
+          cryptoType: crypto.cryptoType,
+          status: TransactionStatus.PENDING,
+          userId: user.id,
+          transactionHash: `0x${crypto.cryptoType}_${Date.now()}_2`,
+          referenceId: `WIT_${crypto.cryptoType}_${Date.now()}_2`,
+          description: `${crypto.cryptoType} Withdrawal`,
         },
-        {
-          type: "DEPOSIT",
-          amount: 15000.00,
-          currency: account.currency,
-          status: "COMPLETED",
-          referenceId: `DEP_${account.currency}_${Date.now()}_3`,
-          transactionHash: `HASH_${account.currency}_${Date.now()}_3`,
-          description: "Bank transfer",
-          bankAccount: { connect: { id: bankAccount.id } }
-        }
       ]
-
+  
       for (const tx of transactions) {
-        await db.transaction.create({
-          data: tx
-        })
+        await db.transaction.create({ data: tx })
       }
     }
   
-    // Currencies to create wallets for
-    const currencies = ['BTC', 'ETH', 'USDT', 'USDC']
+    // Create fiat balances
+    const fiatBalances = [
+      { currency: CurrencyType.USD, balance: 50000 },
+      { currency: CurrencyType.AED, balance: 250000 },
+    ]
   
-    for (const currency of currencies) {
-      // Create wallet if not exists
-      const wallet = await db.wallet.upsert({
+    for (const fiat of fiatBalances) {
+      const balance = await db.fiatBalance.upsert({
         where: {
-          address: `${currency.toLowerCase()}_address_${user.id}`,
+          userId_currency: {
+            userId: user.id,
+            currency: fiat.currency,
+          },
         },
-        update: {},
+        update: { balance: fiat.balance },
         create: {
-          address: `${currency.toLowerCase()}_address_${user.id}`,
-          type: "First party",
-          status: "APPROVED",
-          balance: "1000.50",
-          currency: currency,
           userId: user.id,
-          nickname: `My ${currency} Wallet`,
-        }
+          currency: fiat.currency,
+          balance: fiat.balance,
+        },
       })
   
-      // Create transactions with unique referenceIds
+      // Create fiat transactions
       const transactions = [
         {
-          amount: "100.00",
-          currency: currency,
-          type: "DEPOSIT",
-          status: "COMPLETED",
-          transactionHash: `0xabcd1234_${currency}_${Date.now()}`,
-          referenceId: `DEP123_${currency}_${Date.now()}`,
-          walletId: wallet.id
+          type: TransactionType.FIAT_DEPOSIT,
+          fiatAmount: fiat.balance * 0.6,
+          fiatCurrency: fiat.currency,
+          status: TransactionStatus.COMPLETED,
+          userId: user.id,
+          transactionHash: `${fiat.currency}_${Date.now()}_1`,
+          referenceId: `DEP_${fiat.currency}_${Date.now()}_1`,
+          description: `${fiat.currency} Deposit`,
         },
         {
-          amount: "50.00",
-          currency: currency,
-          type: "WITHDRAWAL",
-          status: "PENDING",
-          transactionHash: `0xefgh5678_${currency}_${Date.now()}`,
-          referenceId: `WIT456_${currency}_${Date.now()}`,
-          walletId: wallet.id
+          type: TransactionType.FIAT_WITHDRAWAL,
+          fiatAmount: fiat.balance * 0.2,
+          fiatCurrency: fiat.currency,
+          status: TransactionStatus.PENDING,
+          userId: user.id,
+          transactionHash: `${fiat.currency}_${Date.now()}_2`,
+          referenceId: `WIT_${fiat.currency}_${Date.now()}_2`,
+          description: `${fiat.currency} Withdrawal`,
         },
-        {
-          amount: "500.00",
-          currency: currency,
-          type: "WITHDRAWAL",
-          status: "PENDING",
-          transactionHash: `0xefgh567_${currency}_${Date.now()}`,
-          referenceId: `WIT4567_${currency}_${Date.now()}`,
-          walletId: wallet.id
-
-        },
-        {
-          amount: "50.00",
-          currency: currency,
-          type: "DEPOSIT",
-          status: "PENDING",
-          transactionHash: `0xefgh56789_${currency}_${Date.now()}`,
-          referenceId: `DEP1234_${currency}_${Date.now()}`,
-          walletId: wallet.id
-
-        }
       ]
   
       for (const tx of transactions) {
-        await db.transaction.create({
-          data: tx
-        })
+        await db.transaction.create({ data: tx })
       }
     }
   

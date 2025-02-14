@@ -4,7 +4,7 @@ export function TermsContent() {
       <section className="space-y-4">
         <h4 className="text-base font-medium">1. Introduction</h4>
         <p className="text-sm text-muted-foreground leading-6">
-          Welcome to Fuze. By accessing and using our platform, you agree to be bound by these Terms and Conditions. 
+          Welcome to Enenni. By accessing and using our platform, you agree to be bound by these Terms and Conditions. 
           These terms outline the rules and regulations for the use of our services.
         </p>
       </section>
@@ -16,12 +16,14 @@ export function TermsContent() {
             In these Terms and Conditions:
           </p>
           <ul className="list-disc list-inside text-sm text-muted-foreground space-y-2 ml-4">
-            <li>&ldquo;Platform&rdquo; refers to Fuze&apos;s website and services</li>
+            <li>&ldquo;Platform&rdquo; refers to Enenni&apos;s website and services</li>
             <li>&ldquo;User,&rdquo; &ldquo;You,&rdquo; and &ldquo;Your&rdquo; refers to you, the person accessing this platform</li>
-            <li>&ldquo;Company,&rdquo; &ldquo;We,&rdquo; &ldquo;Our,&rdquo; and &ldquo;Us&rdquo; refers to Fuze</li>
+
+            <li>&ldquo;Company,&rdquo; &ldquo;We,&rdquo; &ldquo;Our,&rdquo; and &ldquo;Us&rdquo; refers to Enenni</li>
             <li>&ldquo;Party&rdquo; refers to either you or us</li>
           </ul>
         </div>
+
       </section>
 
       <section className="space-y-4">
@@ -82,10 +84,11 @@ export function TermsContent() {
           If you have any questions about these Terms and Conditions, please contact us at:
         </p>
         <div className="text-sm text-muted-foreground ml-4">
-          <p>Email: support@fuze.com</p>
+          <p>Email: support@enenni.com</p>
           <p>Address: [Your Company Address]</p>
         </div>
       </section>
+
 
       <div className="text-sm text-muted-foreground pt-6">
         <p>Last updated: {new Date().toLocaleDateString()}</p>

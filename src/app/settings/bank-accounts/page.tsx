@@ -12,19 +12,12 @@ import { useQuery } from "@tanstack/react-query";
 export default function BankAccountsPage() {
   const { onOpen } = useNewBankAccountModal();
 
-  const getBankAccounts = async () => {
-    const response = await fetch("/api/bank-accounts");
-
-    return response.json();
-  };
-
-  const {
-    data: accounts,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: accounts, isLoading, error } = useQuery({
     queryKey: ["bank-accounts"],
-    queryFn: () => getBankAccounts(),
+    queryFn: async () => {
+      const response = await fetch("/api/bank-accounts");
+      return response.json();
+    },
   });
 
   if (error) {
@@ -77,7 +70,7 @@ export default function BankAccountsPage() {
               </div>
               <h3 className="mt-4 text-lg font-semibold">No Bank Accounts</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                You haven't added any bank accounts yet. Add one to get started.
+                You haven&apos;t added any bank accounts yet. Add one to get started.
               </p>
               <Button onClick={onOpen} className="mt-4" variant="outline">
                 Add Bank Account

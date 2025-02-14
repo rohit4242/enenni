@@ -92,6 +92,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Quote has expired" }, { status: 400 });
     }
 
+    console.log("quote: ++++===: ", quote)
+
     const referenceId = generateReferenceId({ prefix: "ORD", length: 6 });
 
     // Create order and update quote in a transaction
@@ -102,13 +104,15 @@ export async function POST(req: Request) {
           referenceId,
           type: quote.type,
           status: "PENDING",
-          quantity: Number(quote.amount),
-          asset: quote.currency === "USDT" ? "Tether" : quote.currency,
+          quantity: Number(quote.quoteRate),
+          asset: quote.crypto,
           currency: quote.currency,
           pricePerToken: Number(quote.quoteRate),
-          totalAmount: Number(quote.amount) * Number(quote.quoteRate),
+          totalAmount: Number(quote.amount),
+
         },
       }),
+
       db.quote.update({
         where: { id: quoteId },
         data: { status: "USED" },

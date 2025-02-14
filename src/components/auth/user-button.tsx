@@ -34,8 +34,8 @@ export const UserButton = () => {
             Logout
           </DropdownMenuItem>
         </LogoutButton>
-        <DropdownMenuItem>
-          <Link href="/settings" className="flex items-center gap-2">
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="flex items-center gap-2" prefetch>
             <SettingsIcon className="h-4 w-4" />
             Settings
           </Link>

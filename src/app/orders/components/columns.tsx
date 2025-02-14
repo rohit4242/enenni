@@ -77,7 +77,7 @@ export const columns: ColumnDef<Order>[] = [
       )
     },
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("quantity"))
+      const amount = parseFloat(row.original.quantity.toString())
       return <div className="font-medium">{amount.toFixed(2)}</div>
     },
   },

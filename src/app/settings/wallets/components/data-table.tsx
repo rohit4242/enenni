@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { columns } from "./columns"
-import { Wallet } from "@prisma/client"
+import { UserCryptoWallet } from "@prisma/client"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function WalletsDataTable() {
@@ -39,12 +39,12 @@ export function WalletsDataTable() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [loading, setLoading] = useState(true)
-  const [wallets, setWallets] = useState<Wallet[]>([])
+  const [wallets, setWallets] = useState<UserCryptoWallet[]>([])
 
   useEffect(() => {
     const fetchWallets = async () => {
       try {
-        const response = await fetch('/api/wallets')
+        const response = await fetch('/api/crypto-wallets')
         const data = await response.json()
         console.log("data: ", data)
         setWallets(data)
@@ -93,9 +93,9 @@ export function WalletsDataTable() {
       <div className="flex items-center gap-4">
         <Input
           placeholder="Filter wallets..."
-          value={(table.getColumn("address")?.getFilterValue() as string) ?? ""}
+          value={(table.getColumn("walletAddress")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("address")?.setFilterValue(event.target.value)
+            table.getColumn("walletAddress")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />

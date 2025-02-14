@@ -6,6 +6,7 @@ import { getTwoFactorConfirmationByUserId } from "@/data/two-factor-confirmation
 import  db  from "@/lib/db";
 import authConfig from "@/auth.config";
 import { getAccountByUserId } from "./data/account";
+import { initializeUserBalances } from "./lib/user";
 
 export const {
   handlers: { GET, POST },
@@ -19,10 +20,16 @@ export const {
   },
   events: {
     async linkAccount({ user }) {
+      if (!user.id) return;
+      
       await db.user.update({
         where: { id: user.id },
         data: { emailVerified: new Date() },
       });
+
+      
+
+      await initializeUserBalances(user.id);
     },
   },
 
