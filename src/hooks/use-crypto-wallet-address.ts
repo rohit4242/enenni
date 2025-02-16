@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { CryptoBalance, Transaction } from "@prisma/client"
 
 interface UseWalletReturn {
   walletAddress: string | null
@@ -13,9 +12,6 @@ export function useCryptoWalletAddress(currency: string): UseWalletReturn {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-
-
 
   const validCurrencies = ["btc", "eth", "usdc", "usdt"]
   
@@ -32,7 +28,6 @@ export function useCryptoWalletAddress(currency: string): UseWalletReturn {
       
       const response = await fetch(`/api/balances?type=${currency}&currency=${currency}`)
       
-
       const data = await response.json()
       setWalletAddress(data.walletAddress)
     } catch (err) {

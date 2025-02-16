@@ -59,12 +59,13 @@ export function useTransactions(currencyType: CurrencyType | CryptoType) {
     TransactionWithCryptoBalance[] | TransactionWithCurrencyBalance[]
   >({ queryKey, queryFn });
 
-  const balance =
-    transactions && "cryptoBalance" in transactions[0]
-      ? transactions[0].cryptoBalance?.balance
-      : transactions && "currencyBalance" in transactions[0]
-      ? transactions[0].currencyBalance?.balance
-      : 0;
+  const balance = transactions && transactions.length > 0
+    ? "cryptoBalance" in transactions[0]
+      ? transactions[0].cryptoBalance?.balance ?? 0
+      : "currencyBalance" in transactions[0]
+      ? transactions[0].currencyBalance?.balance ?? 0
+      : 0
+    : 0;
 
   return {
     transactions,
