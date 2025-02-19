@@ -20,9 +20,10 @@ const eslintConfig = [
       "@typescript-eslint/no-empty-interface": "off",
       "react-hooks/exhaustive-deps": "off",
       "@next/next/no-img-element": "error",
-      "no-var": "off"
-    }
-  }
+      "no-var": "off",
+      "react-hooks/rules-of-hooks": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

@@ -27,8 +27,6 @@ export const {
         data: { emailVerified: new Date() },
       });
 
-      
-
       await initializeUserBalances(user.id);
     },
   },

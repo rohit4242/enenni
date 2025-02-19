@@ -21,6 +21,7 @@ export const ModalProvider = () => {
       <NewWalletModal />
       <NewBankAccountModal />
       <FiatTransactionInfoModal />
+
     </>
   );
 };
