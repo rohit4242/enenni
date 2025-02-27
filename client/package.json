@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
     "db:seed": "npx prisma db seed",
-    "build:analyze": "cross-env ANALYZE=true npm run build"
+    "build:analyze": "cross-env ANALYZE=true npm run build",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
