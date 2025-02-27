@@ -1,10 +1,6 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
 
-const withBundleAnalyzer = require("@next/bundle-analyzer")({
-  enabled: process.env.ANALYZE === "true",
-});
-
-const nextConfig: NextConfig = withBundleAnalyzer({
+const nextConfig = {
   transpilePackages: ["recharts", "lucide-react"],
   experimental: {
     optimizePackageImports: [
@@ -18,19 +14,21 @@ const nextConfig: NextConfig = withBundleAnalyzer({
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**',
+        protocol: "https",
+        hostname: "**",
       },
     ],
   },
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/:path*` : 'http://localhost:3000/api/:path*',
+        source: "/api/:path*",
+        destination: process.env.NEXT_PUBLIC_API_URL
+          ? `${process.env.NEXT_PUBLIC_API_URL}/:path*`
+          : "http://localhost:3000/api/:path*",
       },
     ];
   },
-});
+};
 
 export default nextConfig;
