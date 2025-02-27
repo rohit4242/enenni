@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication Models
+model Account {
+  id                 String    @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?   @db.Text
+  access_token       String?   @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?   @db.Text
+  session_state      String?
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorConfirmation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+// Core Business Models
+model User {
+  id                   String    @id @default(cuid())
+  name                 String?
+  email                String?   @unique
+  emailVerified        DateTime?
+  password             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  image                String?
+  kycStatus            String?
+  sumsubApplicantId    String?   @unique
+  kycSubmittedAt       DateTime?
+  kycApprovedAt        DateTime?
+  isTwoFactorEnabled   Boolean   @default(false)
+  role                 Role?   @default(USER)
+  mfaEnabled           Boolean   @default(false)
+  mfaSecret            String?
+  mfaQrCode            String?   // To store QR code URL
+  // Relations
+  accounts             Account[]
+  sessions             Session[]
+  orders               Order[]
+  fiatBalances         FiatBalance[]
+  cryptoBalances       CryptoBalance[]
+  userBankAccounts     UserBankAccount[]
+  userCryptoWallets    UserCryptoWallet[]
+  transactions         Transaction[]
+  quotes               Quote[]
+  twoFactorConfirmation TwoFactorConfirmation?
+}
+
+model FiatBalance {
+  id         String      @id @default(uuid())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  currency   CurrencyType
+  balance    Float       @default(0)
+  transactions Transaction[] @relation("FiatBalanceTransaction")
+
+  @@unique([userId, currency])
+}
+
+model CryptoBalance {
+  id         String      @id @default(uuid())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  cryptoType CryptoType
+  balance    Float       @default(0)
+  transactions Transaction[] @relation("CryptoBalanceTransaction")
+  walletAddress String?
+  @@unique([userId, cryptoType])
+}
+
+model UserBankAccount {
+  id           String       @id @default(uuid())
+  user         User         @relation(fields: [userId], references: [id])
+  userId       String
+  bankName     String
+  accountHolder String
+  accountNumber String
+  iban          String
+  currency      CurrencyType
+  status        TransactionStatus @default(PENDING)
+  proofDocumentUrl String?
+  verifyIban String?
+  verifyAccountNumber String?
+  bankAddress String?
+  bankCountry String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model UserCryptoWallet {
+  id            String       @id @default(uuid())
+  user          User         @relation(fields: [userId], references: [id])
+  userId        String
+  walletAddress String
+  cryptoType    CryptoType
+  nickname      String?
+  type          String?
+  status        TransactionStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Transaction {
+  id             String           @id @default(uuid())
+  user           User             @relation(fields: [userId], references: [id])
+  userId         String
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
+  
+  // Fiat transaction fields
+  fiatAmount     Float?
+  fiatCurrency   CurrencyType?
+  
+  // Crypto transaction fields
+  cryptoAmount   Float?
+  cryptoType     CryptoType?
+
+  // transaction hash
+  transactionHash String?
+  referenceId     String?
+  description     String?
+  
+  // Buy/Sell fields
+  exchangeRate   Float?
+  
+  // Add these relation fields
+  fiatBalance    FiatBalance?     @relation("FiatBalanceTransaction", fields: [fiatBalanceId], references: [id])
+  cryptoBalance  CryptoBalance?   @relation("CryptoBalanceTransaction", fields: [cryptoBalanceId], references: [id])
+  
+
+  // Fiat transaction fields
+  fiatBalanceId  String?
+  cryptoBalanceId String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Order {
+  id            String    @id @default(cuid())
+  type          String
+  asset         String
+  quantity      Decimal
+  pricePerToken Decimal
+  totalAmount   Decimal
+  status        OrderStatus
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now())
+  currency      String
+  referenceId   String    @unique
+  quotes        Quote[]   // Add this relation
+}
+
+model Quote {
+  id                String      @id @default(cuid())
+  amount            Decimal
+  currency          String
+  quoteRate         Decimal
+  type             String
+  status           QuoteStatus
+  crypto           String
+  createdAt        DateTime    @default(now())
+  expiresAt        DateTime
+  userId           String
+  user             User        @relation(fields: [userId], references: [id])
+  
+  // New fields for trade calculations
+  calculatedAmount  Decimal
+  calculatedQuantity Decimal
+  tradeFee          Decimal
+  netAmount         Decimal
+  currentPrice      Decimal
+  tradeType         String     // "BUY" or "SELL"
+  
+  // Optional reference fields
+  orderId          String?
+  order            Order?     @relation(fields: [orderId], references: [id])
+}
+
+enum QuoteStatus {
+  ACTIVE
+  ACCEPTED
+  EXPIRED
+}
+
+enum TransactionType {
+  FIAT_DEPOSIT
+  FIAT_WITHDRAWAL
+  CRYPTO_DEPOSIT
+  CRYPTO_WITHDRAWAL
+  BUY_CRYPTO
+  SELL_CRYPTO
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CurrencyType {
+  USD
+  AED
+}
+
+enum CryptoType {
+  USDT
+  USDC
+  BTC
+  ETH
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+// Add this new model for Enenni bank accounts
+model EnnenniBankAccount {
+  id            String       @id @default(uuid())
+  currency      CurrencyType
+  accountName   String
+  accountNumber String
+  iban          String
+  bankName      String
+  swiftCode     String
+  description   String?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
