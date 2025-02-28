@@ -73,6 +73,8 @@ export function useAcceptQuote() {
     mutationFn: async (quoteId: string) => {
       const response = await fetch(`/api/quotes/${quoteId}/accept`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quoteId }),
       });
 
       if (!response.ok) {

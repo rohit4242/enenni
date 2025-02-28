@@ -3,11 +3,13 @@ import db from "@/lib/db";
 import { generateReferenceId } from "@/lib/utils";
 import { currentUser } from "@/lib/auth";
 
-export async function GET(
+export async function POST(
   request: Request,
   { params }: { params: Promise<{ quoteId: string }> }
 ) {
   const quoteId = (await params).quoteId;
+
+  console.log("quoteId: ", quoteId);
 
   try {
     const user = await currentUser();
@@ -22,6 +24,8 @@ export async function GET(
     const quote = await db.quote.findUnique({
       where: { id: quoteId },
     });
+
+    console.log("quote", quote);
 
     if (!quote) {
       return new NextResponse("Quote not found", { status: 404 });
