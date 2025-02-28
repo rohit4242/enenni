@@ -1,55 +1,5 @@
 import axios from 'axios';
 
-const API_KEY = process.env.NEXT_PUBLIC_LIVECOINWATCH_API_KEY;
-const BASE_URL = 'https://api.livecoinwatch.com';
-
-export interface CryptoPrice {
-  symbol: string;
-  baseAsset: string;
-  quoteAsset: string;
-  price: number;
-  timestamp: Date;
-  volume: number;
-  high24h: number;
-  low24h: number;
-}
-
-export async function fetchPrice(baseAsset: string, quoteAsset: string): Promise<CryptoPrice> {
-  try {
-    const response = await axios.post(
-      `${BASE_URL}/coins/single`,
-      {
-        currency: quoteAsset,
-        code: baseAsset,
-        meta: true,
-      },
-      {
-        headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json'
-        },
-        timeout: 5000,
-      }
-    );
-
-    return {
-      symbol: `${baseAsset}${quoteAsset}`,
-      baseAsset,
-      quoteAsset,
-      price: response.data.rate,
-      timestamp: new Date(),
-      volume: response.data.volume,
-      high24h: response.data.high,
-      low24h: response.data.low,
-    };
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(`Failed to fetch price: ${error.message}`);
-    }
-    throw error;
-  }
-}
-
 // Modified fetchChartData function to use Binance API for realtime chart data.
 // Also supports AED by converting USDT data to AED prices.
 // In addition, if the selected crypto is Tether (USDT), we generate a constant chart
