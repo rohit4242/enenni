@@ -81,15 +81,17 @@ export function MainNav({
             </div>
           </SheetContent>
         </Sheet>
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/logo.svg"
-            alt="Enenni"
-            width={100}
-            height={40}
-            className="h-10 w-auto"
-            priority
-          />
+        <Link href="/" className="flex items-center justify-center">
+          <div className="bg-white inline-block pt-4 shadow-slate-950 p-2 pb-4 pr-4 rounded-b-full clip-[polygon(0_0,100%_0,100%_80%,50%_100%,0_80%)]">
+            <Image
+              src="/logo.svg"
+              alt="Enenni"
+              width={100}
+              height={100}
+              className="h-10 w-auto mx-auto"
+              priority
+            />
+          </div>
         </Link>
       </div>
 

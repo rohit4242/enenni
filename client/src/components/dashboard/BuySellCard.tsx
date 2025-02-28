@@ -379,8 +379,9 @@ export function BuySellCard() {
               ) : priceError ? (
                 <div className="text-red-500">Error fetching price</div>
               ) : (
-                <div className="text-xl font-bold">
-                  {formatCurrency(currentPrice?.priceUSD || 0, selectedCurrency?.id || "")}
+                <div className="text-md font-bold text-muted-foreground">
+                  {/* crypto name per fiat currency */}
+                  {formatCurrency(currentPrice?.priceUSD || 0, selectedCrypto?.id || "")} {selectedCurrency?.id}/{selectedCrypto?.id}
                 </div>
               )}
             </form>

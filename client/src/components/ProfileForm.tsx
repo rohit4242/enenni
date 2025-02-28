@@ -15,7 +15,9 @@ import {
 } from "./ui/form"
 import { Input } from "./ui/input"
 import { Textarea } from "./ui/textarea"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
+// Updated schema to include optional fields for user data
 const profileFormSchema = z.object({
   username: z
     .string()
@@ -41,19 +43,22 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 
-// This can come from your database or API
-const defaultValues: Partial<ProfileFormValues> = {
-  bio: "I own a computer.",
-  urls: [
-    { value: "https://shadcn.com" },
-    { value: "http://twitter.com/shadcn" },
-  ],
+// Define a type for the current user
+interface CurrentUser {
+  name?: string
+  email?: string
 }
 
 export function ProfileForm() {
+  // Annotate user with the defined type (or null if not available) and cast the result
+  const user: CurrentUser | null = (useCurrentUser() ?? null) as CurrentUser | null
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues,
+    defaultValues: {
+      username: user?.name || "",
+      email: user?.email || "",
+      bio: "I own a computer.",
+    },
     mode: "onChange",
   })
 
@@ -72,7 +77,7 @@ export function ProfileForm() {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} />
+                <Input {...field} placeholder={user?.name || ""} />
               </FormControl>
               <FormDescription>
                 This is your public display name. It can be your real name or a
@@ -89,7 +94,7 @@ export function ProfileForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="example@domain.com" {...field} />
+                <Input {...field} placeholder={user?.email || ""} />
               </FormControl>
               <FormDescription>
                 Your email address will not be shared publicly.
@@ -106,7 +111,7 @@ export function ProfileForm() {
               <FormLabel>Bio</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Tell us a little bit about yourself"
+                  placeholder="I am a software engineer"
                   className="resize-none"
                   {...field}
                 />
@@ -123,4 +128,4 @@ export function ProfileForm() {
       </form>
     </Form>
   )
-} 
+}
