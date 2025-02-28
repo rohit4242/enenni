@@ -19,6 +19,9 @@ const nextConfig = {
       },
     ],
   },
+  target: "experimental-serverless-trace",
+  reactStrictMode: true,
+
 };
 
 export default nextConfig;
