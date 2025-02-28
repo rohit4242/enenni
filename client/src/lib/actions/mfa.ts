@@ -19,7 +19,7 @@ export async function checkMfaStatus(userId: string) {
 export async function setupMFA(userId: string, email: string) {
   try {
     const response = await fetch(
-      `http://localhost:3001/api/mfa/setup?name=${encodeURIComponent(userId)}`
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/mfa/setup?name=${encodeURIComponent(userId)}`
     );
     
     if (!response.ok) {
@@ -50,7 +50,7 @@ export async function setupMFA(userId: string, email: string) {
 // Verify MFA
 export async function verifyMFA(userId: string, code: string, secret: string) {
   try {
-    const response = await fetch("http://localhost:3001/api/mfa/verify", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/mfa/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
