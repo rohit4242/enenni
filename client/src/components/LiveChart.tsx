@@ -97,8 +97,8 @@ export function LiveChart() {
   } = useQuery({
     queryKey: ["chart-data", baseAsset, quoteAsset, timeRange],
     queryFn: () => fetchChartData(baseAsset, quoteAsset, timeRange),
-    staleTime: 15000,
-    refetchInterval: 15000,
+    staleTime: 1000,
+    refetchInterval: 1000,
     retry: 3,
     refetchOnWindowFocus: true,
     enabled: typeof window !== 'undefined',
@@ -112,8 +112,8 @@ export function LiveChart() {
   } = useQuery({
     queryKey: ["live-price", baseAsset, quoteAsset],
     queryFn: () => fetchCryptoPrice(baseAsset as CryptoAsset, quoteAsset as FiatCurrency),
-    staleTime: 15000,
-    refetchInterval: 15000,
+    staleTime: 1000,
+    refetchInterval: 1000,
     retry: 3,
     refetchOnWindowFocus: true,
     enabled: typeof window !== 'undefined',
