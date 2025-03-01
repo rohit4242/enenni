@@ -1,7 +1,7 @@
 "use server";
 
-import { auth } from "../../auth";
-import db from "../db";
+import { auth } from "@/auth";
+import db from "@/lib/db";
 import {
   CryptoType,
   CurrencyType,
@@ -9,9 +9,12 @@ import {
   TransactionStatus,
   TransactionType,
 } from "@prisma/client";
-import { generateReferenceId } from "../utils";
+import { generateReferenceId } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
-import { transactionSchema, TransactionFormValues } from "../schemas/transaction";
+import {
+  transactionSchema,
+  TransactionFormValues,
+} from "@/lib/schemas/transaction";
 
 // Define transaction types as constants
 const FIAT_DEPOSIT = "FIAT_DEPOSIT";
@@ -29,7 +32,10 @@ export interface SubmitTransactionResponse {
 /**
  * Retrieves transactions for the given type and currency.
  */
-export async function getTransactions(type: "fiat" | "crypto", currency: string) {
+export async function getTransactions(
+  type: "fiat" | "crypto",
+  currency: string
+) {
   try {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
@@ -41,13 +47,19 @@ export async function getTransactions(type: "fiat" | "crypto", currency: string)
           ? {
               fiatCurrency: currency as CurrencyType,
               type: {
-                in: [TransactionType.FIAT_DEPOSIT, TransactionType.FIAT_WITHDRAWAL],
+                in: [
+                  TransactionType.FIAT_DEPOSIT,
+                  TransactionType.FIAT_WITHDRAWAL,
+                ],
               },
             }
           : {
               cryptoType: currency as CryptoType,
               type: {
-                in: [TransactionType.CRYPTO_DEPOSIT, TransactionType.CRYPTO_WITHDRAWAL],
+                in: [
+                  TransactionType.CRYPTO_DEPOSIT,
+                  TransactionType.CRYPTO_WITHDRAWAL,
+                ],
               },
             }),
       },
@@ -116,7 +128,9 @@ async function handleFiatTransaction(data: {
         description:
           data.description ||
           `${data.currency} ${
-            data.transactionType === TransactionType.FIAT_DEPOSIT ? "Deposit" : "Withdrawal"
+            data.transactionType === TransactionType.FIAT_DEPOSIT
+              ? "Deposit"
+              : "Withdrawal"
           }`,
         referenceId: generateReferenceId({ prefix: "FIAT", length: 8 }),
         fiatBalanceId: currentBalance?.id || null,
@@ -230,7 +244,9 @@ async function handleCryptoWithdrawal(data: {
  * Unified server action that validates the incoming data via a discriminated union
  * and dispatches the specific transaction creation logic.
  */
-export async function submitTransaction(data: TransactionFormValues): Promise<SubmitTransactionResponse> {
+export async function submitTransaction(
+  data: TransactionFormValues
+): Promise<SubmitTransactionResponse> {
   // Validate data using the unified discriminated schema.
   const validatedData = transactionSchema.parse(data);
 
@@ -281,4 +297,3 @@ export async function submitTransaction(data: TransactionFormValues): Promise<Su
     return { success: false, error: error.message || "Transaction failed" };
   }
 }
-

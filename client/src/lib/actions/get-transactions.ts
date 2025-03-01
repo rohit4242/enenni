@@ -1,4 +1,4 @@
-import { auth } from "../../auth";
+import { auth } from "@/auth";
 import { CryptoType, CurrencyType } from "@prisma/client";
 
 export async function getTransactions(type: "fiat" | "crypto", currency: string) {

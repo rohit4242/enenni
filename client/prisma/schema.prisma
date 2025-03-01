@@ -103,7 +103,6 @@ model User {
   userBankAccounts     UserBankAccount[]
   userCryptoWallets    UserCryptoWallet[]
   transactions         Transaction[]
-  quotes               Quote[]
   twoFactorConfirmation TwoFactorConfirmation?
 }
 
@@ -209,34 +208,8 @@ model Order {
   createdAt     DateTime  @default(now())
   currency      String
   referenceId   String    @unique
-  quotes        Quote[]   // Add this relation
 }
 
-model Quote {
-  id                String      @id @default(cuid())
-  amount            Decimal
-  currency          String
-  quoteRate         Decimal
-  type             String
-  status           QuoteStatus
-  crypto           String
-  createdAt        DateTime    @default(now())
-  expiresAt        DateTime
-  userId           String
-  user             User        @relation(fields: [userId], references: [id])
-  
-  // New fields for trade calculations
-  calculatedAmount  Decimal
-  calculatedQuantity Decimal
-  tradeFee          Decimal
-  netAmount         Decimal
-  currentPrice      Decimal
-  tradeType         String     // "BUY" or "SELL"
-  
-  // Optional reference fields
-  orderId          String?
-  order            Order?     @relation(fields: [orderId], references: [id])
-}
 
 enum QuoteStatus {
   ACTIVE

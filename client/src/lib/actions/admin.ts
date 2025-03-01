@@ -1,6 +1,6 @@
 "use server";
 
-import { currentRole } from "../auth";
+import { currentRole } from "@/lib/auth";
 
 export const admin = async () => {
   const role = await currentRole();

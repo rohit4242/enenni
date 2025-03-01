@@ -5,74 +5,59 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Loader2, Trash2 } from "lucide-react";
-import { useQuotes, useAcceptQuote, useClearQuotes } from "@/hooks/use-quotes";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Trash2 } from "lucide-react";
+import { useQuoteStore } from "@/hooks/use-quote";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuoteItem } from "./quote-item";
+import { createOrder } from "@/lib/actions/order";
 
 
 export function QuotesCard() {
-  const { data: quotes, isLoading, error, refetch } = useQuotes();
-  const { mutate: acceptQuote, isPending: isAcceptingQuote } = useAcceptQuote();
-  const { mutate: clearQuotes, isPending: isClearingQuotes } = useClearQuotes();
+  const { quotes, acceptQuote, clearQuotes, updateExpiredQuotes, getQuote } = useQuoteStore();
   const { toast } = useToast();
-  
-  // Add this useEffect to periodically check for expired quotes
+
   useEffect(() => {
     const interval = setInterval(() => {
-      refetch();
+      updateExpiredQuotes();
     }, 1000);
-    
+
     return () => clearInterval(interval);
-  }, [refetch]);
+  }, [updateExpiredQuotes]);
 
   const activeQuotes = quotes?.filter(
     (quote) => quote.status === "ACTIVE" && new Date(quote.expiresAt) > new Date()
   );
-  
+
   const expiredQuotes = quotes?.filter(
     (quote) => quote.status === "EXPIRED" || (quote.status === "ACTIVE" && new Date(quote.expiresAt) <= new Date())
   );
-  
+
   const acceptedQuotes = quotes?.filter(
     (quote) => quote.status === "ACCEPTED"
   );
 
   const handleAcceptQuote = async (quoteId: string) => {
-    try {
-      await acceptQuote(quoteId);
-      toast({
-        title: "Success",
-        description: "Quote accepted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to accept quote. Please try again.",
-        variant: "destructive",
-      });
+    acceptQuote(quoteId);
+    const quote = getQuote(quoteId);
+    if (quote) {
+      const order = await createOrder(quote);
+      if (order) {
+        toast({
+          title: "Quote Accepted",
+          description: "Quote accepted successfully",
+        });
+      }
     }
   };
 
   const handleClearAll = async () => {
-    try {
-      await clearQuotes();
-      toast({
-        title: "Success",
-        description: "All quotes cleared successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to clear quotes",
-        variant: "destructive",
-      });
-    }
+    clearQuotes();
+    toast({
+      title: "Quotes Cleared",
+      description: "All quotes cleared successfully",
+    });
   };
 
-  if (isLoading) return <Skeleton className="h-[200px] w-full" />;
-  if (error) return <div>Failed to load quotes</div>;
 
   return (
     <Card className="h-auto">
@@ -83,13 +68,8 @@ export function QuotesCard() {
           variant="outline"
           size="sm"
           className="flex items-center gap-2"
-          disabled={isClearingQuotes}
         >
-          {isClearingQuotes ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
+          <Trash2 className="h-4 w-4" />
           Clear All
         </Button>
       </CardHeader>
@@ -114,10 +94,9 @@ export function QuotesCard() {
                     key={quote.id}
                     quote={quote}
                     onAccept={handleAcceptQuote}
-                    isAcceptingQuote={isAcceptingQuote}
                   />
                 ))}
-                {!activeQuotes?.length && (
+                {activeQuotes?.length === 0 && (
                   <div className="text-center text-muted-foreground p-4">
                     No active quotes
                   </div>
@@ -133,10 +112,9 @@ export function QuotesCard() {
                     key={quote.id}
                     quote={quote}
                     onAccept={handleAcceptQuote}
-                    isAcceptingQuote={isAcceptingQuote}
                   />
                 ))}
-                {!expiredQuotes?.length && (
+                {expiredQuotes?.length === 0 && (
                   <div className="text-center text-muted-foreground p-4">
                     No expired quotes
                   </div>
@@ -152,10 +130,9 @@ export function QuotesCard() {
                     key={quote.id}
                     quote={quote}
                     onAccept={handleAcceptQuote}
-                    isAcceptingQuote={isAcceptingQuote}
                   />
                 ))}
-                {!acceptedQuotes?.length && (
+                {acceptedQuotes?.length === 0 && (
                   <div className="text-center text-muted-foreground p-4">
                     No accepted quotes
                   </div>

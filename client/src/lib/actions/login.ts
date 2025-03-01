@@ -4,11 +4,11 @@ import * as z from "zod";
 import { AuthError } from "next-auth";
 import bcrypt from "bcryptjs";
 
-import { signIn } from "../../auth";
-import { LoginSchema } from "../schemas";
-import { getUserByEmail } from "../../data/user";
-import { DEFAULT_LOGIN_REDIRECT } from "../../routes";
-import { verifyMFA } from "./mfa";
+import { signIn } from "@/auth";
+import { LoginSchema } from "@/lib/schemas";
+import { getUserByEmail } from "@/data/user";
+import { DEFAULT_LOGIN_REDIRECT } from "@/routes";
+import { verifyMFA } from "@/lib/actions/mfa";
 
 export const login = async (
   values: z.infer<typeof LoginSchema>,
@@ -20,7 +20,7 @@ export const login = async (
     return { error: "Invalid fields!" };
   }
 
-  const { email, password, code } = validatedFields.data;
+  const { email, password, code, loginType } = validatedFields.data;
 
   const user = await getUserByEmail(email);
 
@@ -33,7 +33,6 @@ export const login = async (
   if (!passwordMatch) {
     return { error: "Invalid Credentials!" };
   }
-  
 
   if (user.mfaEnabled && user.mfaSecret) {
     if (code) {

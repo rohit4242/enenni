@@ -8,6 +8,7 @@ export const LoginSchema = z.object({
     message: "Password is required",
   }),
   code: z.string().optional(),
+  loginType: z.enum(["Entity", "Individual"]),
 });
 
 export const RegisterSchema = z.object({
@@ -20,6 +21,7 @@ export const RegisterSchema = z.object({
   name: z.string().min(1, {
     message: "Name is required",
   }),
+  loginType: z.enum(["Entity", "Individual"]),
 });
 
 export const ResetSchema = z.object({

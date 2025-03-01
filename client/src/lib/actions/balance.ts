@@ -1,8 +1,8 @@
 "use server";
 
-import { auth } from "../../auth";
-import db from "../db";
-import { cryptoCurrencySchema, currencySchema } from "../validations/balance";
+import { auth } from "@/auth";
+import db from "@/lib/db";
+import { cryptoCurrencySchema, currencySchema } from "@/lib/validations/balance";
 import { revalidatePath } from "next/cache";
 
 export async function getFiatBalances() {

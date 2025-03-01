@@ -1,4 +1,3 @@
-import { z } from "zod";
 
 export type TradeType = "BUY" | "SELL";
 
@@ -7,7 +6,6 @@ export interface TradeInput {
   quantity?: string;
   amount?: string;
   currentPrice: number;
-  feePercentage?: number; // Optional fee percentage, defaults to 0.5%
   availableFiatBalance?: number;
   availableCryptoBalance?: number;
 }
@@ -15,7 +13,6 @@ export interface TradeInput {
 export interface TradeResult {
   calculatedAmount: number;
   calculatedQuantity: number;
-  tradeFee: number;
   netAmount: number;
   error?: string;
   insufficientBalance?: {
@@ -25,14 +22,12 @@ export interface TradeResult {
   };
 }
 
-const DEFAULT_FEE_PERCENTAGE = 0.5; // 0.5% fee
 
 export function calculateTrade({
   tradeType,
   quantity,
   amount,
   currentPrice,
-  feePercentage = DEFAULT_FEE_PERCENTAGE,
   availableFiatBalance,
   availableCryptoBalance,
 }: TradeInput): TradeResult {
@@ -42,15 +37,10 @@ export function calculateTrade({
       throw new Error("Invalid price");
     }
 
-    if (feePercentage < 0) {
-      throw new Error("Invalid fee percentage");
-    }
 
     // Convert fee percentage to decimal
-    const feeRate = feePercentage / 100;
     let calculatedAmount = 0;
     let calculatedQuantity = 0;
-    let tradeFee = 0;
     let netAmount = 0;
 
     // Calculate based on quantity
@@ -62,17 +52,15 @@ export function calculateTrade({
 
       calculatedQuantity = parsedQuantity;
       calculatedAmount = parsedQuantity * currentPrice;
-      tradeFee = calculatedAmount * feeRate;
 
       if (tradeType === "BUY") {
-        netAmount = calculatedAmount + tradeFee;
+        netAmount = calculatedAmount;
         
         // Check if user has enough fiat balance
         if (typeof availableFiatBalance === 'number' && netAmount > availableFiatBalance) {
           return {
             calculatedAmount,
             calculatedQuantity,
-            tradeFee,
             netAmount,
             insufficientBalance: {
               type: "FIAT",
@@ -82,14 +70,13 @@ export function calculateTrade({
           };
         }
       } else {
-        netAmount = calculatedAmount - tradeFee;
+        netAmount = calculatedAmount;
         
         // Check if user has enough crypto balance
         if (typeof availableCryptoBalance === 'number' && calculatedQuantity > availableCryptoBalance) {
           return {
             calculatedAmount,
             calculatedQuantity,
-            tradeFee,
             netAmount,
             insufficientBalance: {
               type: "CRYPTO",
@@ -108,8 +95,7 @@ export function calculateTrade({
       }
 
       if (tradeType === "BUY") {
-        tradeFee = parsedAmount * (feeRate / (1 + feeRate));
-        calculatedAmount = parsedAmount - tradeFee;
+        calculatedAmount = parsedAmount;
         calculatedQuantity = calculatedAmount / currentPrice;
         netAmount = parsedAmount;
 
@@ -118,7 +104,6 @@ export function calculateTrade({
           return {
             calculatedAmount,
             calculatedQuantity,
-            tradeFee,
             netAmount,
             insufficientBalance: {
               type: "FIAT",
@@ -129,16 +114,14 @@ export function calculateTrade({
         }
       } else {
         calculatedAmount = parsedAmount;
-        tradeFee = calculatedAmount * feeRate;
         calculatedQuantity = calculatedAmount / currentPrice;
-        netAmount = calculatedAmount - tradeFee;
+        netAmount = calculatedAmount;
 
         // Check if user has enough crypto balance
         if (typeof availableCryptoBalance === 'number' && calculatedQuantity > availableCryptoBalance) {
           return {
             calculatedAmount,
             calculatedQuantity,
-            tradeFee,
             netAmount,
             insufficientBalance: {
               type: "CRYPTO",
@@ -155,7 +138,6 @@ export function calculateTrade({
     return {
       calculatedAmount,
       calculatedQuantity,
-      tradeFee,
       netAmount,
       error: undefined,
     };
@@ -163,7 +145,6 @@ export function calculateTrade({
     return {
       calculatedAmount: 0,
       calculatedQuantity: 0,
-      tradeFee: 0,
       netAmount: 0,
       error: error instanceof Error ? error.message : "Calculation error",
     };

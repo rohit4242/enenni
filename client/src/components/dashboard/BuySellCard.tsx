@@ -27,10 +27,11 @@ import { useSession } from "next-auth/react";
 import LoginButton from "../auth/login-button";
 import { useBalances } from "@/hooks/use-balances";
 import { calculateTrade, TradeResult } from "@/lib/trade-calculations";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { CryptoAsset, fetchCryptoPrice, FiatCurrency, formatCurrency } from "@/lib/utils";
 import { Skeleton } from "../ui/skeleton";
-
+import { Quote, useQuoteStore } from "@/hooks/use-quote";
+import { nanoid } from "nanoid";
 const formSchema = z
   .object({
     currency: z.string().min(1, "Please select a currency"),
@@ -46,10 +47,9 @@ export function BuySellCard() {
   const { data: session } = useSession();
   const [tradeType, setTradeType] = useState<"BUY" | "SELL">("BUY");
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
   const { fiatBalances, cryptoBalances, loading: balancesLoading } = useBalances();
-  const queryClient = useQueryClient();
   const [tradeResult, setTradeResult] = useState<TradeResult | null>(null);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -153,43 +153,27 @@ export function BuySellCard() {
         variant: "destructive",
       });
     }
+    const quote: Quote = {
+      id: nanoid(),
+      currency: values.currency,
+      crypto: values.crypto,
+      tradeType,
+      currentPrice: currentPrice.priceUSD,
+      calculatedAmount: result.calculatedAmount,
+      calculatedQuantity: result.calculatedQuantity,
+      netAmount: result.netAmount,
+      amount: parseFloat(values.amount || "0"),
+      quoteRate: currentPrice.priceUSD,
+      status: "ACTIVE",
+      expiresAt: Date.now() + 15000, // 15 seconds
+    };
 
-    try {
-      setLoading(true);
-      const response = await fetch("/api/quotes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...values,
-          tradeType,
-          currentPrice: currentPrice.priceUSD,
-          calculatedAmount: result.calculatedAmount,
-          calculatedQuantity: result.calculatedQuantity,
-          tradeFee: result.tradeFee,
-          netAmount: result.netAmount,
-          userId: session.user.id,
-        }),
-      });
+    useQuoteStore.getState().addQuote(quote);
 
-      if (!response.ok) throw new Error("Failed to get quote");
-
-      queryClient.invalidateQueries({ queryKey: ["quotes"] });
-      
-      toast({
-        title: "Quote Created",
-        description: `${tradeType} quote created successfully`,
-      });
-
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to get quote. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({
+      title: "Quote Created",
+      description: `${tradeType} quote created successfully`,
+    });
   };
 
   return (
@@ -320,32 +304,27 @@ export function BuySellCard() {
                   )}
                 />
 
-                <Button type="submit" className="h-10" disabled={loading || priceLoading}>
-                  {loading || priceLoading ? "Loading..." : "Request Quote"}
+                <Button type="submit" className="h-10" disabled={priceLoading}>
+                  {priceLoading ? "Loading..." : "Request Quote"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
 
               {tradeResult && !tradeResult.error && (
                 <div className="mt-4 space-y-2 p-4 border rounded-lg bg-muted/50">
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span>Calculated Amount:</span>
                     <span className="font-medium">
                       {formatCurrency(tradeResult.calculatedAmount, selectedCurrency?.id || "")}
                     </span>
-                  </div>
+                  </div> */}
                   <div className="flex justify-between">
                     <span>Quantity:</span>
                     <span className="font-medium">
                       {tradeResult.calculatedQuantity.toFixed(8)} {selectedCrypto?.id}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Fee (0.5%):</span>
-                    <span className="font-medium">
-                      {formatCurrency(tradeResult.tradeFee, selectedCurrency?.id || "")}
-                    </span>
-                  </div>
+
                   <div className="flex justify-between font-bold">
                     <span>Net {tradeType === "BUY" ? "Cost" : "Proceeds"}:</span>
                     <span className={tradeResult.insufficientBalance ? "text-destructive" : ""}>

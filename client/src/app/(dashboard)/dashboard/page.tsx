@@ -21,7 +21,7 @@ export default function DashboardPage() {
         <>
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold text-white">
-              Welcome Back, {session?.user?.name} {'\u{1F42C}'}
+              Dashboard, {session?.user?.name} {'\u{1F42C}'}
             </h1>
             <p className="text-teal-100">This is your Financial Overview Report</p>
           </div>

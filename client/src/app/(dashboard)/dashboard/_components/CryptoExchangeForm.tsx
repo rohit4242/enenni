@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-// Define the validation schema using Zod
 const formSchema = z.object({
   amountToSend: z.number().min(0.01, "Amount must be greater than 0"),
   currencyToSend: z.enum(["BTC", "ETH", "USDT", "USDC"], {
@@ -47,9 +46,9 @@ export function CryptoExchangeForm() {
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormLabel>You send</FormLabel>
-                <Input 
-                  type="number" 
-                  placeholder="0.0" 
+                <Input
+                  type="number"
+                  placeholder="0.0"
                   {...field}
                   onChange={(e) => field.onChange(parseFloat(e.target.value))}
                 />
@@ -90,9 +89,9 @@ export function CryptoExchangeForm() {
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormLabel>You get</FormLabel>
-                <Input 
-                  type="number" 
-                  placeholder="≈ 0.0" 
+                <Input
+                  type="number"
+                  placeholder="≈ 0.0"
                   {...field}
                   readOnly
                   onChange={(e) => field.onChange(parseFloat(e.target.value))}
