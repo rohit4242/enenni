@@ -1,0 +1,42 @@
+# Use the official Bun image - latest stable version
+FROM oven/bun:latest as build
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and lock file
+COPY package.json bun.lock ./
+
+# Install dependencies 
+RUN bun install --frozen-lockfile
+
+# Copy application code
+COPY . .
+
+# Generate Prisma client
+RUN bunx prisma generate
+
+# Build the application
+RUN bun run build
+
+# Start a new stage for a smaller production image
+FROM oven/bun:latest as production
+
+WORKDIR /app
+
+# Copy built assets from the build stage
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./
+COPY --from=build /app/bun.lock ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/prisma ./prisma
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3004
+
+# Expose the port
+EXPOSE 3004
+
+# Start the application
+CMD ["bun", "run", "start"]
