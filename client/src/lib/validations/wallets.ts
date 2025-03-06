@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CryptoType } from "@prisma/client";
+import { CryptoType } from "../types/db";
 
 export const cryptoTypeSchema = z.nativeEnum(CryptoType);
 

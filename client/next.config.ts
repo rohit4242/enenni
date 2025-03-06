@@ -20,7 +20,7 @@ const nextConfig = {
     ],
   },
   env: {
-    API_ENDPOINT: process.env.API_ENDPOINT || "http://localhost:3002",
+    API_ENDPOINT: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002",
   },
 };
 

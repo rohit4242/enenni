@@ -4,10 +4,10 @@ import { BeatLoader } from "react-spinners";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { newVerification } from "@/lib/actions/new-verification";
 import CardWrapper from "@/components/auth/card-wrapper";
 import { FormError } from "@/components/form-error";
 import { FormSucess } from "@/components/form-sucess";
+import { verifyEmail } from "@/lib/api/auth";
 
 const NewVerificationForm = () => {
   const [error, setError] = useState<string | undefined>();
@@ -15,8 +15,9 @@ const NewVerificationForm = () => {
 
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const email = searchParams.get("email");
 
-  const onSubmit = useCallback(() => {
+  const onSubmit = useCallback(async () => {
     if (success || error) return;
 
     if (!token) {
@@ -24,14 +25,14 @@ const NewVerificationForm = () => {
       return;
     }
 
-    newVerification(token)
-      .then((data) => {
-        setSuccess(data.success);
-        setError(data.error);
-      })
-      .catch(() => {
-        setError("Something went wrong!");
-      });
+    const response = await verifyEmail(token, email || "");
+
+    if (response.error) {
+      setError(response.error);
+    } else {
+      setSuccess("Email verified successfully");
+    }
+
   }, [token, success, error]);
 
   useEffect(() => {

@@ -13,7 +13,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { getTransactions } from "../../../../lib/actions/transactions";
 import {
   Table,
   TableBody,
@@ -21,25 +20,25 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../components/ui/table";
-import { Input } from "../../../../components/ui/input";
-import { Button } from "../../../../components/ui/button";
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "../../../../components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import { columns } from "./table-columns";
 import { ChevronDown } from "lucide-react";
 import {
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../../../components/ui/tabs";
-import { CryptoType } from "@prisma/client";
+} from "@/components/ui/tabs";
+import { CryptoType, Transaction } from "@/lib/types/db";
 import { WalletSkeleton } from "./wallets-skeleton";
+import { getTransactionsBySpecificCryptoType } from "@/lib/api/transactions";
 
 interface TransactionTableProps {
   currency: CryptoType;
@@ -54,7 +53,10 @@ export function TransactionTable({ currency }: TransactionTableProps) {
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ["transactions", "crypto", currency],
-    queryFn: () => getTransactions("crypto", currency),
+    queryFn: async () => {
+      const response = await getTransactionsBySpecificCryptoType(currency);
+      return response.data.transactions;
+    },
     staleTime: 0,
     refetchInterval: 5000,
     refetchOnMount: true,
@@ -68,7 +70,7 @@ export function TransactionTable({ currency }: TransactionTableProps) {
   ];
 
   const filteredTransactions = React.useMemo(() => {
-    return transactions?.filter((transaction) => {
+    return transactions?.filter((transaction: Transaction) => {
       if (activeTab === "pending") return transaction.status === "PENDING";
       if (activeTab === "approved") return transaction.status === "APPROVED";
       if (activeTab === "rejected") return transaction.status === "REJECTED";
@@ -106,7 +108,7 @@ export function TransactionTable({ currency }: TransactionTableProps) {
         <p className="text-sm text-muted-foreground mb-4">
           Start by making a deposit to your wallet.
         </p>
-        <Button 
+        <Button
           onClick={() => window.dispatchEvent(new CustomEvent('OPEN_DEPOSIT_MODAL'))}
           variant="outline"
         >
@@ -156,14 +158,14 @@ export function TransactionTable({ currency }: TransactionTableProps) {
       <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
           {tabs.map((tab) => (
-            <TabsTrigger 
-              key={tab.value} 
+            <TabsTrigger
+              key={tab.value}
               value={tab.value}
               className="flex items-center gap-2"
             >
               {tab.label}
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-xs">
-                {transactions?.filter(t => t.status === tab.value.toUpperCase()).length}
+                {transactions?.filter((t: Transaction) => t.status === tab.value.toUpperCase()).length}
               </span>
             </TabsTrigger>
           ))}
@@ -180,9 +182,9 @@ export function TransactionTable({ currency }: TransactionTableProps) {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>

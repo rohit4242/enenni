@@ -3,14 +3,15 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CurrencyType, TransactionType } from "@prisma/client";
-import { transactionSchema, TransactionFormValues } from "../../../../lib/schemas/transaction";
-import { Button } from "../../../ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../../../ui/form";
-import { Input } from "../../../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../ui/select";
-import { toast } from "../../../../hooks/use-toast";
-import { submitTransaction } from "../../../../lib/actions/transactions";
+import { CurrencyType } from "@/types";
+import { transactionSchema, TransactionFormValues } from "@/lib/schemas/transaction";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { createFiatBalanceTransaction } from "@/lib/api/transactions";
+import { useAuth } from "@/context/AuthContext";
 
 interface BankAccount {
   id: string;
@@ -28,11 +29,16 @@ interface FiatDepositFormProps {
 
 export function FiatDepositForm({ currency, bankAccounts, onSuccess, onClose }: FiatDepositFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   const defaultValues: TransactionFormValues = {
-    transactionType: TransactionType.FIAT_DEPOSIT,
+    transactionType: "FIAT_DEPOSIT",
     amount: "",
-    bankAccountId: "",
+    bankAccountId: "", // Ensure this is correctly typed in the schema
     currency,
     description: `${currency} Deposit`,
   };
@@ -46,7 +52,21 @@ export function FiatDepositForm({ currency, bankAccounts, onSuccess, onClose }: 
   const onSubmit = async (data: TransactionFormValues) => {
     try {
       setIsSubmitting(true);
-      const response = await submitTransaction(data);
+      
+      // Type narrowing to ensure we're dealing with a FIAT_DEPOSIT transaction
+      if (data.transactionType !== "FIAT_DEPOSIT") {
+        throw new Error("Invalid transaction type");
+      }
+
+      
+      const response = await createFiatBalanceTransaction({
+        userId: user.id,
+        amount: parseFloat(data.amount),
+        currency,
+        accountId: data.bankAccountId, // Now TypeScript knows this exists
+        transactionType: data.transactionType,
+        description: data.description,
+      });
       if (!response.success) {
         throw new Error(response.error);
       }
@@ -69,7 +89,7 @@ export function FiatDepositForm({ currency, bankAccounts, onSuccess, onClose }: 
   };
 
   return (
-    <Form {...form} >
+    <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-4">
         <FormField
           control={control}
@@ -113,4 +133,4 @@ export function FiatDepositForm({ currency, bankAccounts, onSuccess, onClose }: 
       </form>
     </Form>
   );
-} 
+}

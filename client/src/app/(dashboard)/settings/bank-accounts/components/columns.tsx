@@ -9,36 +9,34 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserBankAccount } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { UserBankAccount } from "@/lib/types/db";
 
 export const columns: ColumnDef<UserBankAccount>[] = [
   {
-    accessorKey: "accountHolder",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Account Holder
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    accessorKey: "accountHolderName",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Account Holder
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
   },
   {
     accessorKey: "bankName",
     header: "Bank Name",
   },
   {
-    accessorKey: "currency",
+    accessorKey: "accountCurrency",
     header: "Currency",
   },
   {
     accessorKey: "iban",
-    header: "IBAN",
+    header: "Account Number / IBAN",
     cell: ({ row }) => {
       const iban = row.getValue("iban") as string;
       const accountNumber = row.original.accountNumber;
@@ -73,25 +71,21 @@ export const columns: ColumnDef<UserBankAccount>[] = [
   },
   {
     accessorKey: "status",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Status
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       const variant = status === "APPROVED" ? "success" : "destructive";
       return <Badge variant={variant}>{status}</Badge>;
-
     },
   },
-
   {
     id: "actions",
     cell: ({ row }) => {

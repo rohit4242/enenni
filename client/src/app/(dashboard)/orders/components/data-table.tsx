@@ -13,7 +13,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { Order } from "@prisma/client";
 import { DateRange } from "react-day-picker";
 import { useCallback } from "react";
 
@@ -32,68 +31,78 @@ import {
 import { RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { handleExportOrdersCSV } from "@/lib/utils";
+import { getOrders, OrderFilterParams } from "@/lib/api/orders";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export function OrdersDataTable() {
   const { toast } = useToast();
-  const [data, setData] = React.useState<Order[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
-  const [isLoading, setIsLoading] = React.useState(false);
   const [rowsPerPage] = React.useState(10);
-  const [lastUpdated, setLastUpdated] = React.useState<string>("");
+  const [searchValue, setSearchValue] = React.useState<string>("");
+  const debouncedSearch = useDebounce(searchValue, 500);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: rowsPerPage,
   });
 
+  // Build filter params for the API call
+  const buildFilterParams = useCallback((): OrderFilterParams => {
+    const params: OrderFilterParams = {};
+
+    if (dateRange?.from) {
+      params.startDate = dateRange.from.toISOString();
+    }
+    if (dateRange?.to) {
+      params.endDate = dateRange.to.toISOString();
+    }
+    if (debouncedSearch) {
+      params.search = debouncedSearch;
+    }
+
+    return params;
+  }, [dateRange, debouncedSearch]);
+
+  // Use React Query to fetch orders
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+    dataUpdatedAt
+  } = useQuery({
+    queryKey: ['orders', buildFilterParams()],
+    queryFn: async () => {
+      const response = await getOrders(buildFilterParams());
+      return response;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Then in your rendering code, use data.orders instead of data
+  const orders = data?.orders || [];
+
+  // Format the last updated time
+  const lastUpdated = React.useMemo(() => {
+    if (typeof window === 'undefined' || !dataUpdatedAt) return "";
+    return new Date(dataUpdatedAt).toLocaleString();
+  }, [dataUpdatedAt]);
+
+  // Show error toast if query fails
   React.useEffect(() => {
-    const updateLastUpdated = () => {
-      setLastUpdated(new Date().toLocaleString());
-    };
-    updateLastUpdated();
-    const interval = setInterval(updateLastUpdated, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchOrders = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const searchParams = new URLSearchParams();
-      
-      if (dateRange?.from) {
-        searchParams.set("startDate", dateRange.from.toISOString());
-      }
-      if (dateRange?.to) {
-        searchParams.set("endDate", dateRange.to.toISOString());
-      }
-      
-      const search = table.getColumn("referenceId")?.getFilterValue() as string;
-      if (search) {
-        searchParams.set("search", search);
-      }
-
-      const response = await fetch(`/api/orders?${searchParams.toString()}`);
-      if (!response.ok) throw new Error("Failed to fetch orders");
-      
-      const orders = await response.json();
-      setData(orders);
-      setLastUpdated(new Date().toLocaleString());
-    } catch (err) {
-      console.error(err);
+    if (error) {
       toast({
         title: "Error",
         description: "Failed to fetch orders",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  }, [error, toast]);
 
   const table = useReactTable({
-    data,
+    data: orders,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -110,16 +119,13 @@ export function OrdersDataTable() {
       pagination,
     },
     manualPagination: false,
-    pageCount: Math.ceil(data.length / rowsPerPage),
+    pageCount: Math.ceil(orders.length / rowsPerPage),
   });
 
+  // Update search filter in the table when input changes
   React.useEffect(() => {
-    fetchOrders();
-  }, [dateRange, fetchOrders]);
-
-  const handleRefresh = () => {
-    fetchOrders();
-  };
+    table.getColumn("referenceId")?.setFilterValue(debouncedSearch);
+  }, [debouncedSearch, table]);
 
   React.useEffect(() => {
     setPagination(prev => ({
@@ -138,7 +144,7 @@ export function OrdersDataTable() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleRefresh}
+            onClick={() => refetch()}
             disabled={isLoading}
           >
             <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -150,20 +156,17 @@ export function OrdersDataTable() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
           <Input
             placeholder="Search by Order #..."
-            value={(table.getColumn("referenceId")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("referenceId")?.setFilterValue(event.target.value)
-            }
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
             className="w-full sm:max-w-sm"
           />
-          <DateRangePicker 
+          <DateRangePicker
             date={dateRange}
             onDateChange={setDateRange}
           />
         </div>
 
         <div className="flex items-center gap-2">
-        
           <Button onClick={() => handleExportOrdersCSV(table)} size="sm">
             Export CSV
           </Button>
@@ -180,9 +183,9 @@ export function OrdersDataTable() {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -219,8 +222,8 @@ export function OrdersDataTable() {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
         <div className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
           Showing {pagination.pageIndex * pagination.pageSize + 1} to{" "}
-          {Math.min((pagination.pageIndex + 1) * pagination.pageSize, data.length)} of{" "}
-          {data.length} orders
+          {Math.min((pagination.pageIndex + 1) * pagination.pageSize, orders.length)} of{" "}
+          {orders.length} orders
         </div>
         <div className="flex items-center gap-2 order-1 sm:order-2">
           <Button

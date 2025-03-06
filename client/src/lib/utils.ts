@@ -1,7 +1,7 @@
 import { toast } from "../hooks/use-toast";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { CRYPTO_ASSETS, FIAT_CURRENCIES } from "../lib/constants/trading";
+import { CRYPTO_ASSETS, FIAT_CURRENCIES } from "@/lib/constants/trading";
 import currencyFormatter from "currency-formatter";
 
 export type CryptoAsset = (typeof CRYPTO_ASSETS)[number]["value"];
@@ -114,3 +114,16 @@ export const handleExportOrdersCSV = (table: any) => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
+
+export const getBaseUrl = () => {
+  if (typeof window !== "undefined") return ""; // browser should use relative url
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`; // SSR should use vercel url
+  return `http://localhost:${process.env.PORT ?? 3000}`; // dev SSR should use localhost
+};
+
+export const getCallbackUrl = (defaultPath = "/dashboard") => {
+  if (typeof window === "undefined") return defaultPath;
+  
+  const params = new URLSearchParams(window.location.search);
+  return params.get("callbackUrl") || defaultPath;
+}; 

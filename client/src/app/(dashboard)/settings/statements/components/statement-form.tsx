@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "../../../../../components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../../../components/ui/select"
+} from "@/components/ui/select"
 import { Download } from "lucide-react"
 
 // Define types
@@ -130,7 +130,7 @@ export function StatementForm() {
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Statement - {download.period}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>Generated on {new Date(download.date).toLocaleDateString()}</span>
+                    <span>Generated on {typeof window === 'undefined' ? download.date : new Date(download.date).toLocaleDateString()}</span>
                     <span>•</span>
                     <span>{download.size}</span>
                   </div>

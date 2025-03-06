@@ -2,7 +2,7 @@
 import React from "react";
 import { BaseModal } from "./BaseModal";
 import { FiatWithdrawalForm } from "./forms/FiatWithdrawalForm";
-import { CurrencyType } from "@prisma/client";
+import { CurrencyType } from "@/lib/types/db";
 
 interface BankAccount {
   id: string;

@@ -2,15 +2,15 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal } from "lucide-react"
-import { Button } from "../../../../../components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../../../../../components/ui/dropdown-menu"
-import { UserCryptoWallet } from "@prisma/client"
-import { Badge } from "../../../../../components/ui/badge"
+} from "@/components/ui/dropdown-menu"
+import { UserCryptoWallet } from "@/lib/types/db"
+import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 
 const cryptoLogos = {
@@ -36,7 +36,7 @@ export const columns: ColumnDef<UserCryptoWallet>[] = [
     },
     cell: ({ row }) => {
       const wallet = row.original
-      const logo = cryptoLogos[wallet.cryptoType] || '/icons/default-crypto.svg'
+      const logo = cryptoLogos[wallet.cryptoType as keyof typeof cryptoLogos] || '/icons/default-crypto.svg'
       
       return (
         <div className="flex items-center gap-2">
@@ -53,8 +53,8 @@ export const columns: ColumnDef<UserCryptoWallet>[] = [
     },
   },
   {
-    accessorKey: "type",
-    header: "Wallet Owner",
+    accessorKey: "walletType",
+    header: "Wallet Type",
   },
   {
     accessorKey: "nickname",

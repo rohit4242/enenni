@@ -2,22 +2,22 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { ScrollArea, ScrollBar } from "../../../../components/ui/scroll-area";
-import { getCryptoBalances } from "../../../../lib/actions/balance";
-import CurrencyCard from "../../../../components/CurrencyCard";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import CurrencyCard from "@/components/CurrencyCard";
 import { WalletSkeleton } from "./wallets-skeleton";
+import { getCryptoWallets } from "@/lib/api/crypto-wallets";
+import { CryptoBalance } from "@/lib/types/db";
 
 export function WalletsList() {
   const params = useParams();
   const currentCurrency = params.currencyName as string;
 
-  const { data: wallets, isLoading } = useQuery({
-    queryKey: ["crypto-balances"],
+  const { data: wallets, isLoading, error } = useQuery({
+    queryKey: ["crypto-wallets"],
     queryFn: async () => {
-      const wallets = await getCryptoBalances();
-      return wallets;
+      const data = await getCryptoWallets();
+      return data.wallets;
     },
-    staleTime: 30000,
   });
 
 
@@ -36,7 +36,7 @@ export function WalletsList() {
   return (
     <ScrollArea className="w-full">
       <div className="flex gap-4 pb-4 justify-start items-center">
-        {wallets.map((wallet) => (
+        {wallets.map((wallet: CryptoBalance) => (
           <div key={wallet.id} className="w-[150px] flex-shrink-0">
             <CurrencyCard
               type={wallet.cryptoType}

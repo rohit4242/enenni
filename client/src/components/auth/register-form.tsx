@@ -21,15 +21,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/form-error";
 import { FormSucess } from "@/components/form-sucess";
-import { register } from "@/lib/actions/register";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { registerUser } from "@/lib/api/auth";
+import { useRouter } from "next/navigation";
 
 const RegisterForm = () => {
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
   const [selectedTab, setSelectedTab] = useState<string>("Entity");
-
+  const router = useRouter();
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
@@ -46,9 +47,18 @@ const RegisterForm = () => {
     values.loginType = selectedTab as "Entity" | "Individual"; // Set login type based on selected tab
 
     startTransition(() => {
-      register(values).then((data) => {
+      registerUser({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      }).then((data) => {
         setError(data.error);
         setSuccess(data.success);
+        if (data.success) {
+          console.log("Account created successfully", data.success);
+          router.push("/auth/login");
+          setSuccess("Account created successfully");
+        }
       });
     });
   };

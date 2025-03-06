@@ -13,7 +13,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { getTransactions } from "@/lib/actions/transactions";
 import {
   Table,
   TableBody,
@@ -39,7 +38,8 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { TransactionTableLoadingSkeleton } from "./loading-skeleton";
-
+import { getTransactionsBySpecificCurrency } from "@/lib/api/transactions";
+import { Transaction } from "@/lib/types/db";
 interface TransactionTableProps {
   currency: string;
 }
@@ -53,7 +53,10 @@ export function TransactionTable({ currency }: TransactionTableProps) {
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ["transactions", "fiat", currency],
-    queryFn: () => getTransactions("fiat", currency),
+    queryFn: async () => {
+      const response = await getTransactionsBySpecificCurrency(currency);
+      return response.data.transactions;
+    },
     staleTime: 0,
     refetchInterval: 5000,
     refetchOnMount: true,
@@ -67,7 +70,7 @@ export function TransactionTable({ currency }: TransactionTableProps) {
   ];
 
   const filteredTransactions = React.useMemo(() => {
-    return transactions?.filter((transaction) => {
+    return transactions?.filter((transaction: Transaction) => {
       if (activeTab === "pending") return transaction.status === "PENDING";
       if (activeTab === "approved") return transaction.status === "APPROVED";
       if (activeTab === "rejected") return transaction.status === "REJECTED";
@@ -162,7 +165,7 @@ export function TransactionTable({ currency }: TransactionTableProps) {
             >
               {tab.label}
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-xs">
-                {transactions?.filter(t => t.status === tab.value.toUpperCase()).length}
+                {transactions?.filter((t: Transaction) => t.status === tab.value.toUpperCase()).length}
               </span>
             </TabsTrigger>
           ))}

@@ -91,7 +91,7 @@ export function TermsContent() {
 
 
       <div className="text-sm text-muted-foreground pt-6">
-        <p>Last updated: {new Date().toLocaleDateString()}</p>
+        <p>Last updated: March 1, 2024</p>
       </div>
     </div>
   )

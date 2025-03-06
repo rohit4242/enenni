@@ -1,32 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { ClientOnly } from "@/components/ClientOnly";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { data: session, status } = useSession();
+// The inner component that will be wrapped with ClientOnly
+function ProtectedRouteContent({ children }: ProtectedRouteProps) {
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    if (isLoading) return;
 
-  useEffect(() => {
-    if (status === "loading" || !isMounted) return;
-
-    if (!session) {
+    if (!isAuthenticated) {
       router.push("/auth/login");
     }
-  }, [session, status, router, isMounted]);
+  }, [isAuthenticated, router, isLoading]);
 
-  if (status === "loading" || !isMounted) {
+  if (isLoading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-2">
@@ -38,4 +35,20 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   return <>{children}</>;
+}
+
+// The exported component that uses ClientOnly
+export function ProtectedRoute(props: ProtectedRouteProps) {
+  return (
+    <ClientOnly fallback={
+      <div className="flex h-[80vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="size-12 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ProtectedRouteContent {...props} />
+    </ClientOnly>
+  );
 }

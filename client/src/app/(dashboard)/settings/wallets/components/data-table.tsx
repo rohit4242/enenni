@@ -20,43 +20,27 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../../components/ui/table"
-import { Input } from "../../../../../components/ui/input"
-import { Button } from "../../../../../components/ui/button"
+} from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { ChevronDown } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "../../../../../components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 import { columns } from "./columns"
-import { UserCryptoWallet } from "@prisma/client"
-import { Skeleton } from "../../../../../components/ui/skeleton"
+import { UserCryptoWallet } from "@/lib/types/db"
 
-export function WalletsDataTable() {
+interface CryptoWalletsDataTableProps {
+  wallets: UserCryptoWallet[]
+}
+export function WalletsDataTable({ wallets }: CryptoWalletsDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [loading, setLoading] = useState(true)
-  const [wallets, setWallets] = useState<UserCryptoWallet[]>([])
 
-  useEffect(() => {
-    const fetchWallets = async () => {
-      try {
-        const response = await fetch('/api/crypto-wallets')
-        const data = await response.json()
-        console.log("data: ", data)
-        setWallets(data)
-      } catch (error) {
-        console.error('Failed to fetch wallets:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchWallets()
-  }, [])
 
   const table = useReactTable({
     data: wallets,
@@ -75,18 +59,6 @@ export function WalletsDataTable() {
     },
   })
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <div className="rounded-md border">
-          <div className="h-24 p-4">
-            <Skeleton className="h-full w-full" />
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-4">
@@ -136,9 +108,9 @@ export function WalletsDataTable() {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>

@@ -1,4 +1,4 @@
-import { Separator } from "../../../../components/ui/separator"
+import { Separator } from "@/components/ui/separator"
 import { TermsContent } from "./components/terms-content"
 
 export default function TermsPage() {

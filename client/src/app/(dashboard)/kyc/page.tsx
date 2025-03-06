@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { toast, useToast } from "../../../hooks/use-toast";
+import { toast, useToast } from "@/hooks/use-toast";
 import { BeatLoader } from "react-spinners";
 import Script from "next/script";
-import { Button } from "../../../components/ui/button";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 
 declare global {
   interface Window {
@@ -17,7 +17,7 @@ declare global {
 }
 
 export default function KYCPage() {
-  const { data: session, status } = useSession();
+  const { user,isAuthenticated } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const sdkRef = useRef<any>(null);
@@ -54,13 +54,13 @@ export default function KYCPage() {
 
 
     checkVerification();
-  }, [session?.user?.id]);
+  }, [user?.id]);
 
 
   console.log("isVerified: ", isVerified)
 
   const handleStartKYC = async () => {
-    if (!session?.user?.id) {
+    if (!user?.id) {
       toast({
         title: "Error",
         description: "User session not found. Please log in again.",
@@ -80,17 +80,17 @@ export default function KYCPage() {
 
     setIsLoading(true);
     try {
-      const accessToken = await getNewAccessToken(session.user.id);
+      const accessToken = await getNewAccessToken(user?.id || "");
       if (!accessToken) {
         throw new Error("Failed to get access token");
       }
 
       const snsWebSdkInstance = window.snsWebSdk
-        .init(accessToken, () => getNewAccessToken(session?.user.id || ""))
+        .init(accessToken, () => getNewAccessToken(user?.id || ""))
         .withConf({
           lang: "en",
           theme: "light",
-          email: session.user.email,
+          email: user?.email || "",
           enableScrollIntoView: true,
         })
         .withOptions({
@@ -119,7 +119,7 @@ export default function KYCPage() {
               },
               body: JSON.stringify({
                 applicantId: payload.applicantId,
-                userId: session.user.id
+                userId: user?.id || ""
               }),
             });
 
@@ -178,18 +178,18 @@ export default function KYCPage() {
   useEffect(() => {
     if (status === "loading") return;
 
-    if (!session) {
+    if (!user) {
       router.push("/auth/login");
       return;
     }
 
-    if (session?.user?.kycStatus === "APPROVED") {
+    if (user?.kycStatus === "APPROVED") {
       router.push("/dashboard");
       return;
     }
-  }, [session, status, router]);
+  }, [user, isLoading, router]);
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <BeatLoader />

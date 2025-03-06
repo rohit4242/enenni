@@ -3,14 +3,15 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CurrencyType, TransactionType } from "@prisma/client";
-import { transactionSchema, TransactionFormValues } from "../../../../lib/schemas/transaction";
-import { Button } from "../../../ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../../../ui/form";
-import { Input } from "../../../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../ui/select";
-import { toast } from "../../../../hooks/use-toast";
-import { submitTransaction } from "../../../../lib/actions/transactions";
+import { CurrencyType } from "@/types";
+import { transactionSchema, TransactionFormValues } from "@/lib/schemas/transaction";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { createFiatBalanceTransaction } from "@/lib/api/transactions";
+import { useAuth } from "@/context/AuthContext";
 
 interface BankAccount {
   id: string;
@@ -29,9 +30,14 @@ interface FiatWithdrawalFormProps {
 
 export function FiatWithdrawalForm({ currency, bankAccounts, currentBalance, onSuccess, onClose }: FiatWithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   const defaultValues: TransactionFormValues = {
-    transactionType: TransactionType.FIAT_WITHDRAWAL,
+    transactionType: "FIAT_WITHDRAWAL",
     amount: "",
     bankAccountId: "",
     currency,
@@ -51,8 +57,20 @@ export function FiatWithdrawalForm({ currency, bankAccounts, currentBalance, onS
     }
     try {
       setIsSubmitting(true);
-      const response = await submitTransaction(data);
-      if (!response.success) {
+
+      // Type narrowing to ensure we're dealing with a FIAT_WITHDRAWAL transaction
+      if (data.transactionType !== "FIAT_WITHDRAWAL") {
+        throw new Error("Invalid transaction type");
+      }
+      const response = await createFiatBalanceTransaction({
+        userId: user.id,
+        amount: parseFloat(data.amount),
+        currency: currency,
+        transactionType: data.transactionType,
+        accountId: data.bankAccountId,
+        description: data.description,
+      });
+      if (response.error) {
         throw new Error(response.error);
       }
       toast({

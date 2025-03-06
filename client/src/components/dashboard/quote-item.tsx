@@ -6,13 +6,14 @@ import { Clock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Quote } from "@/hooks/use-quote";
 import { motion } from "framer-motion";
+import { ClientOnly } from "@/components/ClientOnly";
 
 interface QuoteItemProps {
   quote: Quote;
   onAccept: (id: string) => void;
 }
 
-export const QuoteItem = memo(function QuoteItem({ quote, onAccept }: QuoteItemProps) {
+const QuoteItemContent = memo(function QuoteItemContent({ quote, onAccept }: QuoteItemProps) {
   // Use a state updated via requestAnimationFrame for smooth progress updates
   const [now, setNow] = useState(Date.now());
 
@@ -77,8 +78,6 @@ export const QuoteItem = memo(function QuoteItem({ quote, onAccept }: QuoteItemP
           <span className=" text-sm text-muted-foreground">{quote.quoteRate
             ? `Rate: ${formatCurrency(Number(quote.quoteRate), quote.currency)}`
             : "Rate: N/A"}</span>
-          {/* <span className="mx-2">|</span> */}
-          {/* <span className="text-xs text-muted-foreground">Qty: {quote.calculatedQuantity}</span> */}
         </div>
       </div>
 
@@ -93,17 +92,19 @@ export const QuoteItem = memo(function QuoteItem({ quote, onAccept }: QuoteItemP
           <span className="text-sm font-medium text-green-600">✓ Accepted</span>
         )}
       </div>
-
-      {/* Extra details added without affecting card size */}
-      {/* <div className="absolute bottom-2 left-4 text-xs text-muted-foreground pointer-events-none">
-        {quote.quoteRate
-          ? `Rate: ${formatCurrency(Number(quote.quoteRate), quote.currency)}`
-          : "Rate: N/A"}
-        {quote.calculatedQuantity !== undefined && (
-          <> | Qty: {typeof quote.calculatedQuantity === "number" ? quote.calculatedQuantity.toFixed(4) : quote.calculatedQuantity}</>
-        )}
-      </div> */}
     </motion.div>
   );
 });
-// End of Selectio
+
+export const QuoteItem = memo(function QuoteItem(props: QuoteItemProps) {
+  return (
+    <ClientOnly fallback={
+      <div className="relative flex items-center justify-between p-4 border rounded-lg overflow-hidden bg-gray-100 animate-pulse">
+        <div className="h-8 w-32 bg-gray-200 rounded"></div>
+        <div className="h-8 w-16 bg-gray-200 rounded"></div>
+      </div>
+    }>
+      <QuoteItemContent {...props} />
+    </ClientOnly>
+  );
+});

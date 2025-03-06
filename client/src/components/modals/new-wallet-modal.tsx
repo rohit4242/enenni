@@ -24,20 +24,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { createCryptoWallet } from "@/lib/api/crypto-wallets";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function NewWalletModal() {
   const { isOpen, onClose } = useNewWalletModal();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<NewWalletFormValues>({
     resolver: zodResolver(newWalletSchema),
     defaultValues: {
       chain: "",
-      address: "",
+      walletAddress: "",
       nickname: "",
-      currency: "BTC",
-      type: "First party",
+      cryptoCurrency: "BTC",
+      walletType: "First party",
     },
   });
 
@@ -48,25 +51,14 @@ export function NewWalletModal() {
       if (!values || typeof values !== 'object') {
         throw new Error("Invalid wallet data");
       }
+      const { error, status } = await createCryptoWallet(values);
 
-      const response = await fetch("/api/crypto-wallets", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          walletAddress: values.address,
-          chain: values.chain,
-          nickname: values.nickname,
-          type: values.type,
-          cryptoType: values.currency,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create wallet");
+      if (status !== 201) {
+        throw new Error(error || "Failed to create wallet");
       }
+
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({ queryKey: ["crypto-wallets"] });
 
       toast({
         title: "Success",
@@ -98,7 +90,7 @@ export function NewWalletModal() {
 
             <FormField
               control={form.control}
-              name="currency"
+              name="cryptoCurrency"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Token</FormLabel>
@@ -151,7 +143,7 @@ export function NewWalletModal() {
 
             <FormField
               control={form.control}
-              name="address"
+              name="walletAddress"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Wallet address</FormLabel>
@@ -170,10 +162,10 @@ export function NewWalletModal() {
                 <FormItem>
                   <FormLabel>Nickname</FormLabel>
                   <FormControl>
-                    <Input 
-                      disabled={loading} 
-                      {...field} 
-                      placeholder="Eg. btc01" 
+                    <Input
+                      disabled={loading}
+                      {...field}
+                      placeholder="Eg. btc01"
                     />
                   </FormControl>
                   <FormMessage />
@@ -183,7 +175,7 @@ export function NewWalletModal() {
 
             <FormField
               control={form.control}
-              name="type"
+              name="walletType"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Wallet Type</FormLabel>
@@ -217,8 +209,8 @@ export function NewWalletModal() {
               >
                 Back
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={loading}
                 loading={loading}
               >
