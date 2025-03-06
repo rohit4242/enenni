@@ -67,26 +67,33 @@ function AuthProviderContent({ children }: { children: ReactNode }) {
     fetchCurrentUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setError(null);
+  const handleLogin = async (email: string, password: string) => {
     try {
-      const { data, error, status, requiresTwoFactor } = await loginUser({ email, password });
+      setIsLoading(true);
+      setError(null);
+      const { data, status } = await loginUser({ email, password });
       
-      if (requiresTwoFactor) {
-        return { requiresTwoFactor: true };
-      }
-
-      if (status === "success" && data?.user) {
+      if (status === "success") {
+        if (data.twoFactor) {
+          // If two-factor is required, don't set the user yet
+          return { requiresTwoFactor: true };
+        }
+        
+        // Otherwise set the user and cookies
         setUser(data.user);
-        router.push('/dashboard');
-        return {};
-      } else {
-        setError(error || "Failed to login");
-        return {};
+        
+        // Handle redirect to dashboard or callback URL
+        const callbackUrl = Cookies.get('loginCallbackUrl') || '/dashboard';
+        Cookies.remove('loginCallbackUrl');
+        window.location.href = callbackUrl;
       }
+      
+      return { requiresTwoFactor: false };
     } catch (err) {
-      setError("An unexpected error occurred");
-      return {};
+      setError(err instanceof Error ? err.message : "Failed to login");
+      return { requiresTwoFactor: false };
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -152,7 +159,7 @@ function AuthProviderContent({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         error,
-        login,
+        login: handleLogin,
         verifyTwoFactor,
         register,
         logout,

@@ -1,9 +1,26 @@
 declare module 'js-cookie' {
-    const Cookies: {
-        get(name: string): string | undefined;
-        set(name: string, value: string, options?: any): void;
-        remove(name: string, options?: any): void;
-        // Add other methods as needed
-    };
-    export default Cookies;
+  interface CookieAttributes {
+    path?: string;
+    domain?: string;
+    expires?: number | Date;
+    secure?: boolean;
+    sameSite?: 'strict' | 'lax' | 'none';
+    maxAge?: number;
+  }
+
+  interface CookiesStatic {
+    set(name: string, value: string, options?: CookieAttributes): string;
+    get(name: string): string | undefined;
+    remove(name: string, options?: CookieAttributes): void;
+    getJSON(name: string): any;
+    withAttributes(attributes: CookieAttributes): CookiesStatic;
+    withConverter(converter: {
+      read: (value: string) => string;
+      write: (value: string) => string;
+    }): CookiesStatic;
+    noConflict(): CookiesStatic;
+  }
+
+  const Cookies: CookiesStatic;
+  export default Cookies;
 }

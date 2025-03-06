@@ -66,9 +66,21 @@ export function middleware(request: NextRequest) {
   // Handle protected routes - redirect to login if not authenticated
   if (isProtectedRoute) {
     if (!isAuthenticated) {
-      const loginUrl = new URL("/auth/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", encodeURI(request.url));
-      return NextResponse.redirect(loginUrl);
+      const url = new URL("/auth/login", request.url);
+      
+      // Store the original URL as a callback URL in a cookie
+      const response = NextResponse.redirect(url);
+      
+      // Set a cookie with the callback URL
+      response.cookies.set({
+        name: "loginCallbackUrl",
+        value: request.nextUrl.pathname,
+        path: "/",
+        maxAge: 60 * 60, // 1 hour
+        sameSite: "lax",
+      });
+      
+      return response;
     }
     
     // If authenticated but not verified, redirect to verification pending page
