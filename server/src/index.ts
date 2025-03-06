@@ -1,97 +1,49 @@
-import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import speakeasy from "speakeasy";
-import QRCode from "qrcode";
-
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { config } from "./config";
+import { errorHandler } from "./middleware/errorHandler";
+import authRouter from "./routes/auth.routes";
+import userRouter from "./routes/user.routes";
+import orderRouter from "./routes/order.routes";
+import externalBankAccountRouter from "./routes/external-bank-account.routes";
+import cryptoWalletRouter from "./routes/crypto-wallet.routes";
+import enenniBankAccountRouter from "./routes/enenni-bank-accounts.routes";
+import fiatBalanceRouter from "./routes/fiat-balance.routes";
+import cryptoBalanceRouter from "./routes/crypto-balance.routes";
+import transactionRouter from "./routes/transaction.routes";
+// Create the main app
 const app = new Hono();
 
-// Add CORS middleware
-app.use("*", async (c, next) => {
-  c.header("Access-Control-Allow-Origin", "*");
-  c.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  c.header("Access-Control-Allow-Headers", "Content-Type");
-  await next();
-});
-
-// Handle OPTIONS requests for CORS preflight
-app.options("*", (c) => {
-  return c.text("", 200);
-});
-
-
-app.get("/", async (c) => {
-  return c.json({
-    message: "Hey There, I'm Rohit Luni",
-  });
-});
-
-app.get("/api/mfa/setup", async (c) => {
-  const name = c.req.query("name");
-  const secret = speakeasy.generateSecret({
-    length: 20,
-    name: `Ennenni:${name}`,
-    
-  });
-
-
-  const otpAuthUrl = speakeasy.otpauthURL({
-    secret: secret.base32,
-    label: `Ennenni:${name}`,
-    encoding: "base32",
-    digits: 6,
-    period: 60,
-  });
-
-  const qrCodeUrl = await QRCode.toDataURL(otpAuthUrl || "");
-
-  if (!otpAuthUrl) {
-    return c.json(
-      {
-        status: "Failed",
-        message: "Failed to generate OTP auth URL",
-      },
-      500
-    );
-  }
-
-  return c.json({
-    secret,
-    qrCodeUrl,
-  });
-});
-
-app.post("/api/mfa/verify", async (c) => {
-  const { code, secret } = await c.req.json();
-
-  const verified = speakeasy.totp.verify({
-    secret: secret,
-    token: code,
-    encoding: "base32",
-    window: 4, // Allow a 4-step window for time sync issues
-  });
-
-  if (!verified) {
-    return c.json(
-      {
-        status: "Failed",
-        message: "Invalid code",
-      },
-      400
-    );
-  }
-
-  return c.json({
-    verified,
-    status: "Success",
-  });
-});
-
-serve(
-  {
-    fetch: app.fetch,
-    port: 3002,
-  },
-  (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
-  }
+// Apply global middleware
+app.use("*", logger());
+app.use("*", errorHandler);
+app.use(
+  "*",
+  cors({
+    origin: config.app.corsOrigins,
+    credentials: true,
+  })
 );
+
+// Health check endpoint
+app.get("/", (c) => c.json({ status: "ok", message: "Enenni API is running" }));
+
+// Register routes
+app.route("/api/auth", authRouter);
+app.route("/api/users", userRouter);
+app.route("/api/external-bank-accounts", externalBankAccountRouter);
+app.route("/api/crypto-wallets", cryptoWalletRouter);
+app.route("/api/enenni-bank-accounts", enenniBankAccountRouter);
+app.route("/api/orders", orderRouter);
+app.route("/api/fiat-balances", fiatBalanceRouter);
+app.route("/api/crypto-balances", cryptoBalanceRouter);
+app.route("/api/transactions", transactionRouter);
+
+// Start the server
+const port = Number(config.app.port);
+
+export default {
+  port,
+  fetch: app.fetch,
+};

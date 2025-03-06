@@ -131,15 +131,13 @@ model UserBankAccount {
   id           String       @id @default(uuid())
   user         User         @relation(fields: [userId], references: [id])
   userId       String
+  accountHolderName String
+  accountNumber String?
+  iban          String?
   bankName     String
-  accountHolder String
-  accountNumber String
-  iban          String
-  currency      CurrencyType
+  accountCurrency      CurrencyType
   status        TransactionStatus @default(PENDING)
   proofDocumentUrl String?
-  verifyIban String?
-  verifyAccountNumber String?
   bankAddress String?
   bankCountry String?
   createdAt     DateTime     @default(now())
@@ -153,7 +151,8 @@ model UserCryptoWallet {
   walletAddress String
   cryptoType    CryptoType
   nickname      String?
-  type          String?
+  walletType    String?
+  chain         String?
   status        TransactionStatus @default(PENDING)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -250,7 +249,7 @@ enum OrderStatus {
 }
 
 // Add this new model for Enenni bank accounts
-model EnnenniBankAccount {
+model EnenniBankAccount {
   id            String       @id @default(uuid())
   currency      CurrencyType
   accountName   String
