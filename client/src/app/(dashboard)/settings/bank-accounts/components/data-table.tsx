@@ -20,18 +20,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../../components/ui/table"
-import { Input } from "../../../../../components/ui/input"
-import { Button } from "../../../../../components/ui/button"
+} from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "../../../../../components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 import { columns } from "./columns"
 import { ChevronDown, Search } from "lucide-react"
-import { UserBankAccount } from "@prisma/client"
+import { UserBankAccount } from "@/lib/types/db"
 
 interface BankAccountsDataTableProps {
   accounts: UserBankAccount[]
@@ -66,9 +66,9 @@ export function BankAccountsDataTable({ accounts }: BankAccountsDataTableProps) 
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Filter accounts..."
-            value={(table.getColumn("accountHolder")?.getFilterValue() as string) ?? ""}
+            value={(table.getColumn("accountHolderName")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn("accountHolder")?.setFilterValue(event.target.value)
+              table.getColumn("accountHolderName")?.setFilterValue(event.target.value)
             }
             className="pl-8 max-w-sm"
           />

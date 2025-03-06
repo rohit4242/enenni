@@ -10,19 +10,19 @@ datasource db {
 
 // Authentication Models
 model Account {
-  id                 String    @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?   @db.Text
-  access_token       String?   @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?   @db.Text
-  session_state      String?
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -36,36 +36,36 @@ model Session {
 }
 
 model VerificationToken {
-  id        String   @id @default(cuid())
-  email     String
-  token     String   @unique
-  expires   DateTime
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
 
   @@unique([email, token])
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
-  email     String
-  token     String   @unique
-  expires   DateTime
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
 
   @@unique([email, token])
 }
 
 model TwoFactorToken {
-  id        String   @id @default(cuid())
-  email     String
-  token     String   @unique
-  expires   DateTime
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
 
   @@unique([email, token])
 }
 
 model TwoFactorConfirmation {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId])
 }
@@ -77,126 +77,132 @@ enum Role {
 
 // Core Business Models
 model User {
-  id                   String    @id @default(cuid())
-  name                 String?
-  email                String?   @unique
-  emailVerified        DateTime?
-  password             String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  image                String?
-  kycStatus            String?
-  sumsubApplicantId    String?   @unique
-  kycSubmittedAt       DateTime?
-  kycApprovedAt        DateTime?
-  isTwoFactorEnabled   Boolean   @default(false)
-  role                 Role?   @default(USER)
-  mfaEnabled           Boolean   @default(false)
-  mfaSecret            String?
-  mfaQrCode            String?   // To store QR code URL
+  id                    String                 @id @default(cuid())
+  name                  String?
+  email                 String?                @unique
+  emailVerified         DateTime?
+  password              String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  image                 String?
+  kycStatus             String?
+  sumsubApplicantId     String?                @unique
+  kycSubmittedAt        DateTime?
+  kycApprovedAt         DateTime?
+  isTwoFactorEnabled    Boolean                @default(false)
+  role                  Role?                  @default(USER)
+  mfaEnabled            Boolean                @default(false)
+  mfaSecret             String?
+  mfaQrCode             String? // To store QR code URL
   // Relations
-  accounts             Account[]
-  sessions             Session[]
-  orders               Order[]
-  fiatBalances         FiatBalance[]
-  cryptoBalances       CryptoBalance[]
-  userBankAccounts     UserBankAccount[]
-  userCryptoWallets    UserCryptoWallet[]
-  transactions         Transaction[]
+  accounts              Account[]
+  sessions              Session[]
+  orders                Order[]
+  fiatBalances          FiatBalance[]
+  cryptoBalances        CryptoBalance[]
+  userBankAccounts      UserBankAccount[]
+  userCryptoWallets     UserCryptoWallet[]
+  transactions          Transaction[]
   twoFactorConfirmation TwoFactorConfirmation?
 }
 
 model FiatBalance {
-  id         String      @id @default(uuid())
-  user       User        @relation(fields: [userId], references: [id])
-  userId     String
-  currency   CurrencyType
-  balance    Float       @default(0)
+  id           String        @id @default(uuid())
+  user         User          @relation(fields: [userId], references: [id])
+  userId       String
+  currency     CurrencyType
+  balance      Float         @default(0)
   transactions Transaction[] @relation("FiatBalanceTransaction")
 
   @@unique([userId, currency])
 }
 
 model CryptoBalance {
-  id         String      @id @default(uuid())
-  user       User        @relation(fields: [userId], references: [id])
-  userId     String
-  cryptoType CryptoType
-  balance    Float       @default(0)
-  transactions Transaction[] @relation("CryptoBalanceTransaction")
+  id            String        @id @default(uuid())
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+  cryptoType    CryptoType
+  balance       Float         @default(0)
+  transactions  Transaction[] @relation("CryptoBalanceTransaction")
   walletAddress String?
+
   @@unique([userId, cryptoType])
 }
 
 model UserBankAccount {
-  id           String       @id @default(uuid())
-  user         User         @relation(fields: [userId], references: [id])
-  userId       String
-  bankName     String
-  accountHolder String
-  accountNumber String
-  iban          String
-  currency      CurrencyType
-  status        TransactionStatus @default(PENDING)
-  proofDocumentUrl String?
-  verifyIban String?
-  verifyAccountNumber String?
-  bankAddress String?
-  bankCountry String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id                String @id @default(uuid())
+  user              User   @relation(fields: [userId], references: [id])
+  userId            String
+  accountHolderName String
+
+  accountNumber String?
+  iban          String?
+
+  bankName String
+
+  accountCurrency CurrencyType
+
+  bankAddress String
+  bankCountry String
+
+  proofDocumentUrl String
+
+  status TransactionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model UserCryptoWallet {
-  id            String       @id @default(uuid())
-  user          User         @relation(fields: [userId], references: [id])
+  id            String            @id @default(uuid())
+  user          User              @relation(fields: [userId], references: [id])
   userId        String
   walletAddress String
   cryptoType    CryptoType
   nickname      String?
-  type          String?
+  walletType    String?
+  chain         String?
   status        TransactionStatus @default(PENDING)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 }
 
 model Transaction {
-  id             String           @id @default(uuid())
-  user           User             @relation(fields: [userId], references: [id])
-  userId         String
-  type           TransactionType
-  status         TransactionStatus @default(PENDING)
-  
+  id     String            @id @default(uuid())
+  user   User              @relation(fields: [userId], references: [id])
+  userId String
+  type   TransactionType
+  status TransactionStatus @default(PENDING)
+
   // Fiat transaction fields
-  fiatAmount     Float?
-  fiatCurrency   CurrencyType?
-  
+  fiatAmount   Float?
+  fiatCurrency CurrencyType?
+
   // Crypto transaction fields
-  cryptoAmount   Float?
-  cryptoType     CryptoType?
+  cryptoAmount Float?
+  cryptoType   CryptoType?
 
   // transaction hash
   transactionHash String?
   referenceId     String?
   description     String?
-  
+
   // Buy/Sell fields
-  exchangeRate   Float?
-  
+  exchangeRate Float?
+
   // Add these relation fields
-  fiatBalance    FiatBalance?     @relation("FiatBalanceTransaction", fields: [fiatBalanceId], references: [id])
-  cryptoBalance  CryptoBalance?   @relation("CryptoBalanceTransaction", fields: [cryptoBalanceId], references: [id])
-  
+  fiatBalance   FiatBalance?   @relation("FiatBalanceTransaction", fields: [fiatBalanceId], references: [id])
+  cryptoBalance CryptoBalance? @relation("CryptoBalanceTransaction", fields: [cryptoBalanceId], references: [id])
 
   // Fiat transaction fields
-  fiatBalanceId  String?
+  fiatBalanceId   String?
   cryptoBalanceId String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Order {
-  id            String    @id @default(cuid())
+  id            String      @id @default(cuid())
   type          String
   asset         String
   quantity      Decimal
@@ -204,12 +210,11 @@ model Order {
   totalAmount   Decimal
   status        OrderStatus
   userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  createdAt     DateTime  @default(now())
+  user          User        @relation(fields: [userId], references: [id])
+  createdAt     DateTime    @default(now())
   currency      String
-  referenceId   String    @unique
+  referenceId   String      @unique
 }
-
 
 enum QuoteStatus {
   ACTIVE
@@ -251,7 +256,7 @@ enum OrderStatus {
 }
 
 // Add this new model for Enenni bank accounts
-model EnnenniBankAccount {
+model EnenniBankAccount {
   id            String       @id @default(uuid())
   currency      CurrencyType
   accountName   String

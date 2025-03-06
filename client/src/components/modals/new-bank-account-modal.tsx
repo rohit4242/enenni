@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNewBankAccountModal } from "@/hooks/use-new-bank-account";
-import { newBankAccountSchema } from "@/lib/schemas/bank-account";
+import { NewBankAccountFormValues, newBankAccountSchema } from "@/lib/schemas/bank-account";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Form,
@@ -27,22 +27,10 @@ import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CurrencyType } from "@prisma/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileUpload } from "@/components/ui/file-upload";
-
-type NewBankAccountFormValues = {
-  accountHolderName: string;
-  accountType: "IBAN" | "ACCOUNT_NUMBER";
-  iban?: string;
-  verifyIban?: string;
-  accountNumber?: string;
-  verifyAccountNumber?: string;
-  bankAddress: string;
-  bankCountry: string;
-  proofDocumentUrl: string;
-  currency: CurrencyType;
-};
+import { createBankAccount } from "@/lib/api/external-bank-accounts";
+import { useAuth } from "@/context/AuthContext";
 
 
 const COUNTRIES = [
@@ -58,16 +46,21 @@ export function NewBankAccountModal() {
   const [loading, setLoading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string>("");
   const queryClient = useQueryClient();
-
+  const { user } = useAuth();
   const form = useForm<NewBankAccountFormValues>({
     resolver: zodResolver(newBankAccountSchema),
     defaultValues: {
-      accountHolderName: "Rohit Luni",
-      accountType: "IBAN",
+      accountHolderName: user?.name || "",
+      accountType: "ACCOUNT_NUMBER",
+      bankName: "",
       bankAddress: "",
       bankCountry: "",
+      accountCurrency: "AED",
       proofDocumentUrl: "",
-      currency: CurrencyType.AED,
+      iban: "",
+      verifyIban: "",
+      accountNumber: "",
+      verifyAccountNumber: "",
     },
   });
 
@@ -91,20 +84,28 @@ export function NewBankAccountModal() {
         return;
       }
 
-      const response = await fetch("/api/bank-accounts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...values,
-          proofDocumentUrl: uploadedUrl,
-        }),
+      // Make sure iban is a string, not undefined
+      const ibanValue = values.accountType === "IBAN" ? (values.iban || "") : "";
+      // Make sure accountNumber is a string, not undefined
+      const accountNumberValue = values.accountType === "ACCOUNT_NUMBER" ? (values.accountNumber || "") : "";
+
+      // Use the actual uploaded URL or empty string, not a hardcoded value
+      const proofUrl = uploadedUrl || "";
+
+      const { data, status, error } = await createBankAccount({
+        ...values,
+        proofDocumentUrl: proofUrl,
+        bankName: values.bankName,
+        accountHolderName: values.accountHolderName,
+        accountNumber: accountNumberValue,
+        bankAddress: values.bankAddress,
+        bankCountry: values.bankCountry,
+        accountCurrency: values.accountCurrency,
+        iban: ibanValue,
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+      if (status !== 201) {
+        throw new Error(error || "Failed to add bank account");
       }
 
       // Invalidate and refetch
@@ -188,7 +189,11 @@ export function NewBankAccountModal() {
                       <FormItem>
                         <FormLabel>IBAN</FormLabel>
                         <FormControl>
-                          <Input disabled={loading} {...field} />
+                          <Input
+                            disabled={loading}
+                            {...field}
+                            value={field.value || ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -201,7 +206,11 @@ export function NewBankAccountModal() {
                       <FormItem>
                         <FormLabel>Verify IBAN</FormLabel>
                         <FormControl>
-                          <Input disabled={loading} {...field} />
+                          <Input
+                            disabled={loading}
+                            {...field}
+                            value={field.value || ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -217,7 +226,11 @@ export function NewBankAccountModal() {
                       <FormItem>
                         <FormLabel>Account Number</FormLabel>
                         <FormControl>
-                          <Input disabled={loading} {...field} />
+                          <Input
+                            disabled={loading}
+                            {...field}
+                            value={field.value || ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -230,7 +243,11 @@ export function NewBankAccountModal() {
                       <FormItem>
                         <FormLabel>Verify Account Number</FormLabel>
                         <FormControl>
-                          <Input disabled={loading} {...field} />
+                          <Input
+                            disabled={loading}
+                            {...field}
+                            value={field.value || ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -252,6 +269,21 @@ export function NewBankAccountModal() {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="bankName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bank name</FormLabel>
+                    <FormControl>
+                      <Input disabled={loading} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
 
               <FormField
                 control={form.control}
@@ -292,12 +324,9 @@ export function NewBankAccountModal() {
                       <FileUpload
                         endpoint="imageUploader"
                         onChange={(url) => {
-                          if (url) {
-                            field.onChange(url);
-                            setUploadedUrl(url);
-                          }
+                          field.onChange(url || "");
+                          setUploadedUrl(url || "");
                         }}
-
                       />
                     </FormControl>
 
@@ -319,7 +348,7 @@ export function NewBankAccountModal() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading} loading={loading}>
                   Submit
                 </Button>
               </div>

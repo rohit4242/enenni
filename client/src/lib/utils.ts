@@ -1,7 +1,7 @@
 import { toast } from "../hooks/use-toast";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { CRYPTO_ASSETS, FIAT_CURRENCIES } from "../lib/constants/trading";
+import { CRYPTO_ASSETS, FIAT_CURRENCIES } from "@/lib/constants/trading";
 import currencyFormatter from "currency-formatter";
 
 export type CryptoAsset = (typeof CRYPTO_ASSETS)[number]["value"];

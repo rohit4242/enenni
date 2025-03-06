@@ -3,9 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { getFiatBalances } from "@/lib/actions/balance";
 import CurrencyCard from "@/components/CurrencyCard";
 import { BalanceLoadingSkeleton } from "./loading-skeleton";
+import { getFiatBalances } from "@/lib/api/fiat-balances";
+import { CurrencyType, FiatBalance } from "@/lib/types/db";
 
 export function BalanceList() {
   const params = useParams();
@@ -15,7 +16,7 @@ export function BalanceList() {
     queryKey: ["fiat-balances"],
     queryFn: async () => {
       const balances = await getFiatBalances();
-      return balances;
+      return balances.data;
     },
     staleTime: 30000,
   });
@@ -35,10 +36,10 @@ export function BalanceList() {
   return (
     <ScrollArea className="w-full">
       <div className="flex gap-4 pb-4 justify-start items-center">
-        {balances.map((balance) => (
+        {balances.map((balance: FiatBalance) => (
           <div key={balance.id} className="w-[150px] flex-shrink-0">
             <CurrencyCard
-              type={balance.currency}
+              type={balance.currency as CurrencyType}
               isActive={currentCurrency === balance.currency.toLowerCase()}
               variant="balances"
             />

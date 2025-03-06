@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     const limit = limitMapping[timeRange] || 60;
     
     const data = await fetchWithRetry(
-      `https://www.okx.com/api/v5/market/candles?instId=${formattedSymbol}&bar=${bar}&limit=${limit}`
+      `https://www.okx.com/api/v5/market/history-index-candles?instId=${formattedSymbol}&bar=${bar}&limit=${limit}`
     );
 
     if (!data.data || data.data.length === 0) {

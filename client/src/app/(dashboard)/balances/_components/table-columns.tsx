@@ -12,9 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Transaction } from "@prisma/client";
 import { formatCurrency } from "@/lib/utils";
 import { formatDate } from "date-fns";
+import { Transaction } from "@/lib/types/db";
 
 export const columns: ColumnDef<Transaction>[] = [
   {

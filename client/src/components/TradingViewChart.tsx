@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { ClientOnly } from "@/components/ClientOnly";
 
 interface TradingViewChartProps {
   symbol: string;
@@ -21,7 +22,7 @@ const mapTimeRangeToInterval = (timeRange: string): string => {
   }
 };
 
-const TradingViewChart: React.FC<TradingViewChartProps> = ({ symbol, timeRange, currency }) => {
+const TradingViewChartContent: React.FC<TradingViewChartProps> = ({ symbol, timeRange, currency }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,6 +88,14 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ symbol, timeRange, 
     <div className="tradingview-widget-container" ref={containerRef}>
       <div className="tradingview-widget-container__widget"></div>
     </div>
+  );
+};
+
+const TradingViewChart: React.FC<TradingViewChartProps> = (props) => {
+  return (
+    <ClientOnly fallback={<div className="h-full w-full min-h-[400px] bg-gray-100 animate-pulse"></div>}>
+      <TradingViewChartContent {...props} />
+    </ClientOnly>
   );
 };
 

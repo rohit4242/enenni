@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { CRYPTO_ASSETS, FIAT_CURRENCIES } from "@/lib/constants/trading";
 import { formatCurrency } from "@/lib/utils"
+import { ClientOnly } from "@/components/ClientOnly"
 
 type CryptoAsset = typeof CRYPTO_ASSETS[number]['value'];
 type FiatCurrency = typeof FIAT_CURRENCIES[number]['value'];
@@ -83,7 +84,7 @@ async function fetchCryptoPrice(baseAsset: CryptoAsset, quoteAsset: FiatCurrency
   return response.json();
 }
 
-export function LiveChart() {
+function LiveChartContent() {
   const [timeRange, setTimeRange] = React.useState("1h")
   const [baseAsset, setBaseAsset] = React.useState("BTC")
   const [quoteAsset, setQuoteAsset] = React.useState("USD")
@@ -174,7 +175,6 @@ export function LiveChart() {
         <ChartTooltip
           content={
             <ChartTooltipContent
-
               labelFormatter={(value) => {
                 return new Date(value).toLocaleString("en-US", {
                   month: "short",
@@ -188,7 +188,6 @@ export function LiveChart() {
               }}
             />
           }
-
         />
         <DataComponent
           dataKey="price"
@@ -198,8 +197,6 @@ export function LiveChart() {
           strokeWidth={chartType === "bar" ? 0 : 2}
           isAnimationActive={false}
           radius={chartType === "bar" ? 4 : undefined}
-
-
         />
         <ChartLegend content={<ChartLegendContent />} />
       </ChartComponent>
@@ -207,7 +204,7 @@ export function LiveChart() {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
         <div className="grid flex-1 gap-1 text-center sm:text-left">
           <CardTitle>Price Chart</CardTitle>
@@ -293,5 +290,26 @@ export function LiveChart() {
         </ChartContainer>
       </CardContent>
     </Card>
+  );
+}
+
+export function LiveChart() {
+  return (
+    <ClientOnly fallback={
+      <Card className="w-full">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
+          <div>
+            <CardTitle>Live Price Chart</CardTitle>
+            <CardDescription>Real-time cryptocurrency price data</CardDescription>
+          </div>
+          <Skeleton className="h-10 w-full sm:w-[450px]" />
+        </CardHeader>
+        <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+          <Skeleton className="h-[250px] w-full" />
+        </CardContent>
+      </Card>
+    }>
+      <LiveChartContent />
+    </ClientOnly>
   );
 }

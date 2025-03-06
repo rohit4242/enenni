@@ -2,7 +2,7 @@
 import React from "react";
 import { BaseModal } from "./BaseModal";
 import { CryptoWithdrawalForm } from "./forms/CryptoWithdrawalForm";
-import { CryptoType } from "@prisma/client";
+import { CryptoType } from "@/lib/types/db";
 
 interface CryptoWithdrawalModalProps {
   isOpen: boolean;

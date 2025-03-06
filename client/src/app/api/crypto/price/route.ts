@@ -55,13 +55,10 @@ export async function GET(request: Request) {
 
     const ticker = data.data[0];
     const priceUSD = parseFloat(ticker.last);
-    const conversionRate = 3.67; // Example conversion rate for AED
-    const priceAED = priceUSD * conversionRate;
 
     return NextResponse.json({
       symbol: formattedSymbol,
       priceUSD,
-      priceAED,
     });
   } catch (error) {
     console.error("Error fetching price data from OKX:", error);

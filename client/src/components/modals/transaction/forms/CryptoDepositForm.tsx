@@ -3,12 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CryptoType, TransactionType } from "@prisma/client";
 import {
   transactionSchema,
   TransactionFormValues,
-} from "../../../../lib/schemas/transaction";
-import { Button } from "../../../ui/button";
+} from "@/lib/schemas/transaction";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -16,8 +15,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "../../../ui/form";
-import { Input } from "../../../ui/input";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -26,11 +25,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { submitTransaction } from "@/lib/actions/transactions";
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, Loader2 } from "lucide-react";
 import { handleCopyAddress } from "@/lib/utils";
-import { useCryptoWalletAddress } from "@/hooks/use-crypto-wallet-address";
+import { getCryptoBalanceByCryptoType } from "@/lib/api/crypto-balances";
+import { useQuery } from "@tanstack/react-query";
+import { createCryptoBalanceTransaction } from "@/lib/api/transactions";
+import { useAuth } from "@/context/AuthContext";
+import { CryptoType } from "@/types";
 
 interface CryptoDepositFormProps {
   cryptoType: CryptoType;
@@ -47,9 +49,12 @@ export function CryptoDepositForm({
 }: CryptoDepositFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isQRLoading, setIsQRLoading] = useState(true);
-
+  const { user } = useAuth();
+  if (!user) {
+    return <div>Loading...</div>;
+  }
   const defaultValues: TransactionFormValues = {
-    transactionType: TransactionType.CRYPTO_DEPOSIT,
+    transactionType: "CRYPTO_DEPOSIT",
     amount: "",
     cryptoType,
     walletAddress: "",
@@ -70,9 +75,17 @@ export function CryptoDepositForm({
     setValue,
   } = form;
 
-  // Get wallet address corresponding to this crypto type from the CryptoBalance table.
-  const { walletAddress, loading: walletLoading } =
-    useCryptoWalletAddress(cryptoType);
+  const { data: walletData, isLoading } = useQuery({
+    queryKey: ["wallet", "crypto", cryptoType],
+    queryFn: async () => {
+      const balance = await getCryptoBalanceByCryptoType(cryptoType);
+      return balance.data;
+    },
+    retry: 1,
+  });
+
+  const walletAddress = walletData?.walletAddress;
+  const walletLoading = isLoading;
 
   // Auto-populate the walletAddress field when the hook returns a value.
   useEffect(() => {
@@ -85,10 +98,25 @@ export function CryptoDepositForm({
   const onSubmit = async (data: TransactionFormValues) => {
     try {
       setIsSubmitting(true);
-      const response = await submitTransaction(data);
+
+      // Type narrowing to ensure we're dealing with a CRYPTO_DEPOSIT transaction
+      if (data.transactionType !== "CRYPTO_DEPOSIT") {
+        throw new Error("Invalid transaction type");
+      }
+
+      const response = await createCryptoBalanceTransaction({
+        userId: user.id,
+        cryptoType: data.cryptoType,
+        amount: parseFloat(data.amount),
+        walletAddress: data.walletAddress,
+        network: data.network,
+        transactionType: data.transactionType,
+        description: data.description,
+      });
       if (!response.success) {
         throw new Error(response.error);
       }
+
       toast({
         title: "Success",
         description: "Deposit created successfully",

@@ -24,9 +24,8 @@ import CardWrapper from "@/components/auth/card-wrapper";
 import { FormError } from "@/components/form-error";
 import { FormSucess } from "@/components/form-sucess";
 
-import { login } from "@/lib/actions/login";
-import { DEFAULT_LOGIN_REDIRECT } from "@/routes";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { loginUser } from "@/lib/api/auth";
 
 const LoginForm = () => {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
@@ -57,7 +56,7 @@ const LoginForm = () => {
     setSuccess("");
     values.loginType = selectedTab as "Entity" | "Individual";
     startTransition(() => {
-      login(values, callbackUrl)
+      loginUser(values)
         .then((data) => {
           if (data?.error) {
             form.reset({
@@ -78,7 +77,7 @@ const LoginForm = () => {
           if (!data?.error && !data?.mfaRequired) {
             form.reset();
             setSuccess("Logged in successfully!");
-            router.push(DEFAULT_LOGIN_REDIRECT);
+            router.push('/dashboard');
           }
         })
         .catch((error) => {

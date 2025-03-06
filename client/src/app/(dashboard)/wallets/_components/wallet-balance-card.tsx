@@ -2,16 +2,16 @@
 
 import React, { useState } from "react";
 import { ArrowUpRight, MoveDown } from "lucide-react";
-import { Button } from "../../../../components/ui/button";
-import { Card, CardContent } from "../../../../components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { formatCurrency } from "../../../../lib/utils";
-import { CryptoType } from "@prisma/client";
-import { useToast } from "../../../../hooks/use-toast";
+import { formatCurrency } from "@/lib/utils";
+import { CryptoType } from "@/lib/types/db";
+import { useToast } from "@/hooks/use-toast";
 import { WalletSkeleton } from "./wallets-skeleton";
-import { getCryptoBalance } from "../../../../lib/actions/balance";
-import { CryptoDepositModal } from "../../../../components/modals/transaction/CryptoDepositModal";
-import { CryptoWithdrawalModal } from "../../../../components/modals/transaction/CryptoWithdrawalModal";
+import { getCryptoBalanceByCryptoType } from "@/lib/api/crypto-balances";
+import { CryptoDepositModal } from "@/components/modals/transaction/CryptoDepositModal";
+import { CryptoWithdrawalModal } from "@/components/modals/transaction/CryptoWithdrawalModal";
 
 // Define available networks for crypto types.
 const CRYPTO_NETWORKS: Record<string, string[]> = {
@@ -37,7 +37,10 @@ export function WalletBalanceCard({ currency, onSuccess }: WalletBalanceCardProp
   // Fetch crypto wallet balance.
   const { data: walletData, isLoading } = useQuery({
     queryKey: ["wallet", "crypto", currency],
-    queryFn: () => getCryptoBalance(currency),
+    queryFn: async () => {
+      const balance = await getCryptoBalanceByCryptoType(currency);
+      return balance.data;
+    },
     staleTime: 30000,
     retry: 1,
   });

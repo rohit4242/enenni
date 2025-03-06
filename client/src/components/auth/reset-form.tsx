@@ -20,8 +20,7 @@ import { Button } from "@/components/ui/button";
 import CardWrapper from "@/components/auth/card-wrapper";
 import { FormError } from "@/components/form-error";
 import { FormSucess } from "@/components/form-sucess";
-
-import { reset } from "@/lib/actions/reset";
+import { requestPasswordReset } from "@/lib/api/auth";
 
 const ResetForm = () => {
   const [error, setError] = useState<string | undefined>("");
@@ -35,15 +34,17 @@ const ResetForm = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof ResetSchema>) => {
+  const onSubmit = async (values: z.infer<typeof ResetSchema>) => {
     setError("");
     setSuccess("");
 
-    startTransition(() => {
-      reset(values).then((data) => {
-        setError(data?.error);
-        setSuccess(data?.success);
-      });
+    startTransition(async () => {
+      const response = await requestPasswordReset(values.email);
+      if (response.error) {
+        setError(response.error);
+      } else {
+        setSuccess("Password reset email sent");
+      }
     });
     console.log(values);
   };

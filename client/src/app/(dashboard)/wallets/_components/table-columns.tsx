@@ -2,19 +2,19 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import { Button } from "../../../../components/ui/button";
-import { Checkbox } from "../../../../components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "../../../../components/ui/dropdown-menu";
-import { Badge } from "../../../../components/ui/badge";
-import { Transaction } from "@prisma/client";
-import { formatCurrency } from "../../../../lib/utils";
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/utils";
 import { formatDate } from "date-fns";
+import { Transaction } from "@/lib/types/db";
 
 export const columns: ColumnDef<Transaction>[] = [
   {

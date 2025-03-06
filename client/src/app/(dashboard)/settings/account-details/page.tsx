@@ -1,5 +1,5 @@
 import { AccountDetailsList } from "./components/account-details-list"
-import { PageLayout } from "../../../../components/PageLayout"
+import { PageLayout } from "@/components/PageLayout"
 
 export default function AccountDetailsPage() {
   return (

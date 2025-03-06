@@ -4,20 +4,20 @@ import { Suspense, use, useEffect, useState } from "react";
 import { currencySchema } from "@/lib/validations/balance";
 import { BalanceList } from "@/app/(dashboard)/balances/_components/balance-list";
 import { TransactionTable } from "@/app/(dashboard)/balances/_components/transaction-table";
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { BalanceCard } from "@/app/(dashboard)/balances/_components/balance-card";
-import { CurrencyType } from "@prisma/client";
+import { CurrencyType } from "@/lib/types/db";
 import { BalanceLoadingSkeleton, TransactionTableLoadingSkeleton } from "@/app/(dashboard)/balances/_components/loading-skeleton";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface BalancePageProps {
   params: Promise<{ fiatDashboard: string }> & { fiatDashboard: string };
 }
 
 export default function BalancePage({ params }: BalancePageProps) {
-  const user = useCurrentUser();
+  const { user } = useAuth();
   const resolvedParams = use(params);
   const fiatDashboard = resolvedParams.fiatDashboard.toUpperCase();
   const [isMounted, setIsMounted] = useState(false);

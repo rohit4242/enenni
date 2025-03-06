@@ -9,7 +9,7 @@ import { Trash2 } from "lucide-react";
 import { useQuoteStore } from "@/hooks/use-quote";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuoteItem } from "./quote-item";
-import { createOrder } from "@/lib/actions/order";
+import { createOrder } from "@/lib/api/orders";
 
 
 export function QuotesCard() {
@@ -40,7 +40,15 @@ export function QuotesCard() {
     acceptQuote(quoteId);
     const quote = getQuote(quoteId);
     if (quote) {
-      const order = await createOrder(quote);
+      const order = await createOrder({
+        type: quote.tradeType,
+        asset: quote.crypto,
+        quantity: quote.calculatedQuantity,
+        pricePerToken: quote.quoteRate,
+        totalAmount: quote.netAmount,
+        currency: quote.currency,
+        referenceId: quote.id,
+      });
       if (order) {
         toast({
           title: "Quote Accepted",

@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { TransactionStatus, TransactionType } from "@prisma/client"
+import { TransactionStatus, TransactionType } from "@/lib/types/db"
 
 export const bankAccountSchema = z.object({
   id: z.string(),
@@ -7,6 +7,7 @@ export const bankAccountSchema = z.object({
   bankName: z.string(),
   accountNumber: z.string().nullable(),
   iban: z.string().nullable(),
+  proofDocumentUrl: z.string().nullable(),
   currency: z.string(),
   bankAddress: z.string().nullable(),
   bankCountry: z.string(),

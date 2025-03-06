@@ -1,4 +1,5 @@
 "use client";
+
 import { useNewBankAccountModal } from "@/hooks/use-new-bank-account";
 import { BankAccountsDataTable } from "./components/data-table";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
+import { getBankAccounts } from "@/lib/api/external-bank-accounts";
 
 export default function BankAccountsPage() {
   const { onOpen } = useNewBankAccountModal();
@@ -15,8 +17,8 @@ export default function BankAccountsPage() {
   const { data: accounts, isLoading, error } = useQuery({
     queryKey: ["bank-accounts"],
     queryFn: async () => {
-      const response = await fetch("/api/bank-accounts");
-      return response.json();
+      const data = await getBankAccounts();
+      return data.accounts;
     },
   });
 
