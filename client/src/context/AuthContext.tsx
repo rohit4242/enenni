@@ -23,7 +23,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<{ requiresTwoFactor?: boolean } | {}>;
+  login: (email: string, password: string) => Promise<{ requiresTwoFactor?: boolean }>;
   verifyTwoFactor: (email: string, code: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -81,14 +81,14 @@ function AuthProviderContent({ children }: { children: ReactNode }) {
         Cookies.set('token', data.token);
         setUser(data.user);
         router.push('/dashboard');
-        return {};
+        return { requiresTwoFactor: false };
       } else {
         setError(error || "Failed to login");
-        return {};
+        return { requiresTwoFactor: false };
       }
     } catch (err) {
       setError("An unexpected error occurred");
-      return {};
+      return { requiresTwoFactor: false };
     } finally {
       setIsLoading(false);
     }
