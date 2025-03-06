@@ -140,7 +140,7 @@ export function BuySellCardContent() {
     const result = calculateTrade({
       tradeType,
       [field]: value,
-      currentPrice: currentPrice?.priceAED,
+      currentPrice: currentPrice?.priceUSD,
       availableFiatBalance: selectedCurrency?.balance,
       availableCryptoBalance: selectedCrypto?.balance,
     });
@@ -186,7 +186,7 @@ export function BuySellCardContent() {
       tradeType,
       quantity: values.quantity,
       amount: values.amount,
-      currentPrice: currentPrice?.priceAED,
+      currentPrice: currentPrice?.priceUSD,
       availableFiatBalance: selectedCurrency?.balance,
       availableCryptoBalance: selectedCrypto?.balance,
     });
@@ -215,12 +215,12 @@ export function BuySellCardContent() {
       currency: values.currency,
       crypto: values.crypto,
       tradeType,
-      currentPrice: currentPrice?.priceAED,
+      currentPrice: currentPrice?.priceUSD,
       calculatedAmount: result.calculatedAmount,
       calculatedQuantity: result.calculatedQuantity,
       netAmount: result.netAmount,
       amount: parseFloat(values.amount || "0"),
-      quoteRate: currentPrice?.priceAED,
+      quoteRate: currentPrice?.priceUSD,
       status: "ACTIVE",
       expiresAt: Date.now() + 15000, // 15 seconds
     };

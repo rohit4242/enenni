@@ -23,7 +23,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<{ requiresTwoFactor?: boolean }>;
+  login: (email: string, password: string) => Promise<{ requiresTwoFactor?: boolean } | {}>;
   verifyTwoFactor: (email: string, code: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -67,41 +67,39 @@ function AuthProviderContent({ children }: { children: ReactNode }) {
     fetchCurrentUser();
   }, []);
 
-  const handleLogin = async (email: string, password: string) => {
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      setError(null);
-      const { data, status } = await loginUser({ email, password });
-      
-      if (status === "success") {
-        if (data.twoFactor) {
-          // If two-factor is required, don't set the user yet
-          return { requiresTwoFactor: true };
-        }
-        
-        // Otherwise set the user and cookies
-        setUser(data.user);
-        
-        // Handle redirect to dashboard or callback URL
-        const callbackUrl = Cookies.get('loginCallbackUrl') || '/dashboard';
-        Cookies.remove('loginCallbackUrl');
-        window.location.href = callbackUrl;
+      const { data, status, error, requiresTwoFactor } = await loginUser({ email, password });
+
+      if (requiresTwoFactor) {
+        return { requiresTwoFactor: true };
       }
-      
-      return { requiresTwoFactor: false };
+
+      if (status === "success" && data?.user) {
+        Cookies.set('token', data.token);
+        setUser(data.user);
+        router.push('/dashboard');
+        return {};
+      } else {
+        setError(error || "Failed to login");
+        return {};
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login");
-      return { requiresTwoFactor: false };
+      setError("An unexpected error occurred");
+      return {};
     } finally {
       setIsLoading(false);
     }
   };
 
+
   const verifyTwoFactor = async (email: string, code: string) => {
     setError(null);
     try {
       const { data, error, status } = await verifyTwoFactorSetup(code);
-      
+
       if (status === "success" && data?.user) {
         setUser(data.user);
         router.push('/dashboard');
@@ -117,7 +115,7 @@ function AuthProviderContent({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const { data, error, status } = await registerUser({ name, email, password });
-      
+
       if (status === "success") {
         // Don't auto-login after registration, they need to verify email
         router.push('/auth/verify-email');
@@ -159,7 +157,7 @@ function AuthProviderContent({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         error,
-        login: handleLogin,
+        login,
         verifyTwoFactor,
         register,
         logout,
