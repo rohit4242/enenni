@@ -65,7 +65,6 @@ export async function GET(request: Request) {
     const bar = barMapping[timeRange] || "1m";
     const limit = limitMapping[timeRange] || 60;
     
-    // First try to get index candlesticks for more accurate price data
     try {
       const indexData = await fetchWithRetry(
         `https://www.okx.com/api/v5/market/index-candles?instId=${formattedSymbol}&bar=${bar}&limit=${limit}`

@@ -5,18 +5,12 @@ import { IconUpload, IconX } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { generateClientDropzoneAccept } from "uploadthing/client";
-import { useUploadThing } from "@/lib/uploadthing";
-import { OurFileRouter } from "@/app/api/uploadthing/core";
 import Image from "next/image";
+import { uploadImage } from "@/lib/api/external-bank-accounts";
 
-const permittedFileInfo = {
-  config: {
-    image: {},
-    pdf: {},
-    video: {},
-  },
-};
+// Define permitted file types
+const PERMITTED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const mainVariant = {
   initial: {
@@ -41,60 +35,58 @@ const secondaryVariant = {
 
 export interface FileUploadProps {
   onChange: (url?: string) => void;
-  endpoint: keyof OurFileRouter;
+  endpoint?: string; // Made optional for backward compatibility
+  bankAccountId?: string; // Added for our custom implementation
 }
 
 export const FileUpload = ({
   onChange,
   endpoint,
+  bankAccountId = "temp", // Default value for new accounts
 }: FileUploadProps) => {
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string>("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { startUpload } = useUploadThing(endpoint, {
-    onClientUploadComplete: (res) => {
-      setIsUploading(false);
-      if (res && res[0]) {
-        const fileUrl = res[0].url;
-        setUploadedUrl(fileUrl);
-        onChange(fileUrl);
-        toast({
-          title: "Success",
-          description: "File uploaded successfully",
-        });
-        // Set preview URL for image files
-        if (res[0].type.startsWith("image/")) {
-          setPreviewUrl(fileUrl);
-        }
-      }
-    },
-    onUploadError: (error) => {
-      setIsUploading(false);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to upload file",
-        variant: "destructive",
-      });
-    },
-    onUploadBegin: () => {
-      setIsUploading(true);
-    },
-  });
-
-  const fileTypes = permittedFileInfo?.config ? Object.keys(permittedFileInfo.config) : [];
-
   const handleFileChange = (newFiles: File[]) => {
-    setFiles(newFiles);
+    // Validate file type and size
     if (newFiles.length > 0) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(newFiles[0]); // Preview the first file
+      const file = newFiles[0];
+      
+      // Check file type
+      if (!PERMITTED_FILE_TYPES.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a JPEG, PNG, WebP image, or PDF document",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "File too large",
+          description: "File size exceeds 5MB limit",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setFiles(newFiles);
+      
+      // Create preview for image files
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviewUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -104,6 +96,7 @@ export const FileUpload = ({
     if (updatedFiles.length === 0) {
       setUploadedUrl("");
       setPreviewUrl(null);
+      onChange(undefined);
     }
   };
 
@@ -116,14 +109,53 @@ export const FileUpload = ({
 
     try {
       setIsUploading(true);
-      await startUpload(selectedFiles);
+      setUploadProgress(0);
+      
+      // Set up a progress tracking interval to simulate progress
+      // (since our uploadImage doesn't have real-time progress)
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          const newProgress = prev + Math.random() * 10;
+          return newProgress > 90 ? 90 : newProgress; // Cap at 90% until complete
+        });
+      }, 300);
+      
+      const result = await uploadImage(selectedFiles[0], bankAccountId);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      
+      // Handle successful upload
+      if (result.data?.url) {
+        setUploadedUrl(result.data.url);
+        onChange(result.data.url);
+        toast({
+          title: "Success",
+          description: "File uploaded successfully",
+        });
+        
+        // Set preview URL for image files
+        if (selectedFiles[0].type.startsWith("image/")) {
+          setPreviewUrl(result.data.url);
+        }
+      } else {
+        console.error("Missing URL in response:", result);
+        throw new Error("No URL returned from upload");
+      }
     } catch (error) {
-      setIsUploading(false);
+      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+      console.error("Upload error:", error);
       toast({
         title: "Error",
-        description: "Upload failed",
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -136,15 +168,21 @@ export const FileUpload = ({
         handleUpload(acceptedFiles);
       }
     },
-    onDropRejected: (error) => {
-      console.log(error);
+    onDropRejected: (fileRejections) => {
+      const errorMessage = fileRejections[0]?.errors[0]?.message || "File upload rejected";
       toast({
         title: "Error",
-        description: "File upload rejected",
+        description: errorMessage,
         variant: "destructive",
       });
     },
-    accept: generateClientDropzoneAccept(fileTypes),
+    accept: {
+      'image/jpeg': [],
+      'image/png': [],
+      'image/webp': [],
+      'application/pdf': []
+    },
+    maxSize: MAX_FILE_SIZE,
   });
 
   return (
@@ -155,8 +193,19 @@ export const FileUpload = ({
         className={`p-2 group/file block rounded-lg cursor-pointer w-full relative overflow-hidden border-2 ${isDragActive ? 'border-blue-500' : 'border-gray-300'} transition duration-300 ease-in-out`}
       >
         {isUploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-50">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-50">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            {uploadProgress > 0 && (
+              <div className="w-full max-w-xs mt-4">
+                <div className="bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full" 
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-center mt-1">{Math.round(uploadProgress)}%</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -172,12 +221,7 @@ export const FileUpload = ({
             }
           }}
           className="hidden"
-          accept={fileTypes.map(type =>
-            type === "image" ? "image/*" :
-              type === "pdf" ? "application/pdf" :
-                type === "video" ? "video/*" :
-                  "*"
-          ).join(",")}
+          accept={PERMITTED_FILE_TYPES.join(",")}
         />
 
         <div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]">
