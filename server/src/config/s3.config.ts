@@ -2,10 +2,10 @@ import { S3Client } from 'bun';
 
 // Load environment variables for S3 configuration
 export const s3Config = {
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-  bucket: process.env.AWS_S3_BUCKET || '',
-  region: process.env.AWS_REGION || 'us-east-1',
+  accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+  bucket: process.env.S3_BUCKET_NAME || '',
+  region: process.env.S3_REGION || 'us-east-1',
   endpoint: process.env.AWS_S3_ENDPOINT || `https://s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com`,
   acl: process.env.AWS_S3_ACL || 'public-read',
 };

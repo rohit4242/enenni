@@ -54,4 +54,9 @@ export const verifyExternalBankAccountSchema = z.object({
 export const filterExternalBankAccountSchema = z.object({
   status: z.nativeEnum(TransactionStatus).optional(),
   currency: z.nativeEnum(CurrencyType).optional(),
+});
+
+// Schema for updating proof document URL
+export const updateProofDocumentSchema = z.object({
+  proofDocumentUrl: z.string().url("Valid proof document URL is required"),
 }); 

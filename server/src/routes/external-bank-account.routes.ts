@@ -5,7 +5,8 @@ import {
   createExternalBankAccountSchema,
   updateExternalBankAccountSchema,
   verifyExternalBankAccountSchema,
-  filterExternalBankAccountSchema
+  filterExternalBankAccountSchema,
+  updateProofDocumentSchema
 } from '../schemas/external-bank-account.schema';
 import { authenticate, requireAdmin } from '../middleware/auth';
 
@@ -20,6 +21,7 @@ externalBankAccountRouter.get('/:id', externalBankAccountHandler.getBankAccountB
 externalBankAccountRouter.post('/', zValidator('json', createExternalBankAccountSchema), externalBankAccountHandler.createBankAccount);
 externalBankAccountRouter.put('/:id', zValidator('json', updateExternalBankAccountSchema), externalBankAccountHandler.updateBankAccount);
 externalBankAccountRouter.delete('/:id', externalBankAccountHandler.deleteBankAccount);
+externalBankAccountRouter.put('/:id/proof-document', zValidator('json', updateProofDocumentSchema), externalBankAccountHandler.updateProofDocument);
 
 // Admin routes
 externalBankAccountRouter.get('/admin/all', requireAdmin, externalBankAccountHandler.getAllBankAccounts);

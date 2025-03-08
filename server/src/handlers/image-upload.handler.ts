@@ -13,7 +13,7 @@ import type { ImageUploadMetadata } from '../schemas/image-upload.schema';
 // Upload image to S3
 export const uploadImage = async (c: Context) => {
   try {
-    const userId = c.get('userId');
+    const userId = c.get('user')?.id;
     
     // Parse the multipart form data
     const formData = await c.req.formData();
@@ -56,24 +56,20 @@ export const uploadImage = async (c: Context) => {
     // Get the file buffer
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // Upload to S3
-    await s3Client.putObject(key, buffer, {
-      contentType: file.type,
-      acl: metadata.isPrivate ? 'private' : s3Config.acl,
-      metadata: {
-        'user-id': userId,
-        'original-name': originalFilename,
-        'description': metadata.description || '',
-        'reference-type': metadata.referenceType,
-        'reference-id': metadata.referenceId || '',
-      }
+    // Create a reference to the S3 file
+    const s3File = s3Client.file(key);
+    
+    // Upload to S3 using Bun's write method
+    await s3File.write(buffer, {
+      type: file.type,
+      acl: metadata.isPrivate ? 'private' : (s3Config.acl as 'public-read' | 'private')
     });
     
     // Generate the URL
     const url = metadata.isPrivate 
       ? null 
       : `${s3Config.endpoint}/${s3Config.bucket}/${key}`;
-    
+   
     // Return the upload details
     return c.json({
       success: true,
@@ -102,16 +98,12 @@ export const uploadImage = async (c: Context) => {
 // Delete image from S3
 export const deleteImage = async (c: Context) => {
   try {
-    const userId = c.get('userId');
-    const isAdmin = c.get('isAdmin');
+    const userId = c.get('user')?.id;
     const { key } = await c.req.json();
     
-    // Check if the image belongs to the user or if the user is an admin (optional)
-    // This would require you to store image metadata in the database
-    // For simplicity, we're just checking if the user is authenticated
-    
-    // Delete from S3
-    await s3Client.deleteObject(key);
+    // Delete from S3 using Bun's delete method
+    const s3File = s3Client.file(key);
+    await s3File.delete();
     
     return c.json({
       success: true,
@@ -126,8 +118,8 @@ export const deleteImage = async (c: Context) => {
 // Get a presigned URL for client-side uploads
 export const getPresignedUrl = async (c: Context) => {
   try {
-    const userId = c.get('userId');
-    const { fileType, fileName, folder = 'general' } = await c.req.json();
+    const userId = c.get('user')?.id;
+    const { fileType, fileName, folder = 'general', referenceType = 'GENERAL', referenceId } = await c.req.json();
     
     // Validate file type
     if (!ALLOWED_IMAGE_TYPES.includes(fileType)) {
@@ -142,19 +134,29 @@ export const getPresignedUrl = async (c: Context) => {
     // Define the key (path) in the S3 bucket
     const key = `${folder}/${uniqueFilename}`;
     
-    // Generate a presigned URL for PUT
-    // Note: Bun's S3 client doesn't directly support presigned URLs natively like AWS SDK
-    // You might need to use a different approach or integrate with AWS SDK for this feature
+    // Create a reference to the S3 file
+    const s3File = s3Client.file(key);
     
-    // For now, let's just return a mock response
+    // Generate a presigned URL with 1 hour expiration
+    const expiresIn = 3600; // 1 hour
+    const uploadUrl = s3File.presign({
+      expiresIn,
+      method: 'PUT',
+      acl: s3Config.acl as 'public-read' | 'private'
+    });
+    
     return c.json({
       success: true,
       data: {
-        uploadUrl: `https://${s3Config.bucket}.s3.${s3Config.region}.amazonaws.com/${key}`,
+        uploadUrl,
         key,
         fileName: uniqueFilename,
         folder,
-        expiresIn: 3600, // 1 hour
+        expiresIn,
+        // Include these so the client can update the URL after uploading
+        fileUrl: `${s3Config.endpoint}/${s3Config.bucket}/${key}`,
+        referenceType,
+        referenceId
       }
     });
   } catch (error) {

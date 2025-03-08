@@ -20,6 +20,8 @@ export const presignedUrlSchema = z.object({
   fileType: z.string().min(1, { message: 'File type is required' }),
   fileName: z.string().min(1, { message: 'File name is required' }),
   folder: z.string().optional().default('general'),
+  referenceType: z.enum(['USER_PROFILE', 'BANK_PROOF', 'KYC_DOCUMENT', 'GENERAL']).optional().default('GENERAL'),
+  referenceId: z.string().optional(),
 });
 
 export type ImageUploadMetadata = z.infer<typeof imageUploadMetadataSchema>;

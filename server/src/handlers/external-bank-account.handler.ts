@@ -202,3 +202,46 @@ export const getAllBankAccounts = async (c: Context) => {
 
   return c.json({ accounts });
 };
+
+// Update proof document URL
+export const updateProofDocument = async (c: Context) => {
+  const userId = c.get("userId");
+  const accountId = c.req.param("id");
+  const { proofDocumentUrl } = await c.req.json();
+
+  try {
+    // First, check if the account exists and belongs to the user
+    const existingAccount = await prisma.userBankAccount.findUnique({
+      where: { id: accountId },
+    });
+
+    if (!existingAccount) {
+      throw new HTTPException(404, { message: "Bank account not found" });
+    }
+
+    // Verify ownership
+    if (existingAccount.userId !== userId) {
+      throw new HTTPException(403, { message: "You don't have permission to update this bank account" });
+    }
+
+    // Update the proof document URL
+    const updatedAccount = await prisma.userBankAccount.update({
+      where: { id: accountId },
+      data: {
+        proofDocumentUrl,
+      },
+    });
+
+    return c.json({
+      success: true,
+      message: "Proof document updated successfully",
+      account: updatedAccount,
+    });
+  } catch (error) {
+    if (error instanceof HTTPException) {
+      throw error;
+    }
+    console.error("Error updating proof document:", error);
+    throw new HTTPException(500, { message: "Failed to update proof document" });
+  }
+};

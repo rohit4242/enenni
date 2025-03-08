@@ -7,9 +7,11 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
   app: {
-    port: process.env.PORT || 3004,
+    port: process.env.PORT || 4000,
+    nodeEnv: process.env.NODE_ENV || 'development',
+    version: process.env.APP_VERSION || '1.0.0',
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
-    corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
+    corsOrigins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : undefined,
   },
   email: {
     resendApiKey: process.env.RESEND_API_KEY || '',
