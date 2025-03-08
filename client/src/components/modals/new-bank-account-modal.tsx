@@ -327,6 +327,7 @@ export function NewBankAccountModal() {
                           field.onChange(url || "");
                           setUploadedUrl(url || "");
                         }}
+                        bankAccountId="temp"
                       />
                     </FormControl>
 
