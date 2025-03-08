@@ -15,8 +15,7 @@ import {
 } from "./ui/form"
 import { Input } from "./ui/input"
 import { Textarea } from "./ui/textarea"
-import { useCurrentUser } from "@/hooks/use-current-user"
-
+import { useAuth } from "@/context/AuthContext";
 // Updated schema to include optional fields for user data
 const profileFormSchema = z.object({
   username: z
@@ -51,7 +50,7 @@ interface CurrentUser {
 
 export function ProfileForm() {
   // Annotate user with the defined type (or null if not available) and cast the result
-  const user: CurrentUser | null = (useCurrentUser() ?? null) as CurrentUser | null
+  const { user } = useAuth();
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {

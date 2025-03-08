@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CurrencyType, CryptoType } from "@prisma/client";
+import { CryptoType, CurrencyType } from "../types/db";
 
 export const balanceSchema = z.object({
   type: z.enum(["fiat", "crypto"]),

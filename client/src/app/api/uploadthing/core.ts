@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 
@@ -15,15 +14,9 @@ export const ourFileRouter = {
       maxFileCount: 1,
     },
   })
-    .middleware(async ({ req }) => {
-      const session = await auth();
 
-      if (!session?.user) throw new UploadThingError("Unauthorized");
-
-      return { userId: session.user.id };
-    })
     .onUploadComplete(async ({ metadata, file }) => {
-      return { uploadedBy: metadata.userId };
+      return { uploadedBy: "Rohit" };
     }),
 } satisfies FileRouter;
 

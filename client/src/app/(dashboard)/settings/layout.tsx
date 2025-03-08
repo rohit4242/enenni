@@ -18,10 +18,6 @@ const sidebarNavItems = [
     href: "/settings/wallets",
   },
   {
-    title: "Security",
-    href: "/settings/security",
-  },
-  {
     title: "Terms & conditions",
     href: "/settings/terms",
   },

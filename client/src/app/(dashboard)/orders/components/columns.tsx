@@ -9,9 +9,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Order } from "@prisma/client"
 import { formatCurrency } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { Order } from "@/lib/types/db"
 
 export const columns: ColumnDef<Order>[] = [
   {
@@ -42,6 +42,9 @@ export const columns: ColumnDef<Order>[] = [
       )
     },
     cell: ({ row }) => {
+      if (typeof window === 'undefined') {
+        return <span>Loading...</span>;
+      }
       const date = new Date(row.getValue("createdAt"))
       return <span>{date.toLocaleString()}</span>
     },

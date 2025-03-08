@@ -1,6 +1,5 @@
 // lib/sumsub.ts
 import crypto from "crypto";
-import db from "./db";
 
 interface SumsubWebhookEvent {
   applicantId: string;
@@ -82,29 +81,11 @@ export class SumsubClient {
   async handleWebhookEvent(event: SumsubWebhookEvent) {
     const { applicantId, reviewResult } = event;
 
-    // Update user KYC status in database
-    await db.user.update({
-      where: { sumsubApplicantId: applicantId },
-      data: {
-        kycStatus:
-          reviewResult.reviewAnswer === "GREEN" ? "APPROVED" : "REJECTED",
-        kycApprovedAt:
-          reviewResult.reviewAnswer === "GREEN" ? new Date() : null,
-      },
-    });
   }
 
   async updateApplicantStatus(userId: string, applicantId: string) {
     try {
-      // Update user with applicant ID
-      await db.user.update({
-        where: { id: userId },
-        data: {
-          sumsubApplicantId: applicantId,
-          kycStatus: "PENDING",
-          kycSubmittedAt: new Date(),
-        },
-      });
+
     } catch (error) {
       console.error("Failed to update applicant status:", error);
       throw error;

@@ -10,9 +10,10 @@ import { Button } from "../ui/button";
 import { Copy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { create } from "zustand";
-import { useCompanyBankAccount } from "@/hooks/use-company-bank-account";
-import { CurrencyType } from "@prisma/client";
+import { CurrencyType } from "@/lib/types/db";
 import { Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getEnenniBankAccounts } from "@/lib/api/enenni-bank-accounts";
 
 interface TransactionInfo {
   referenceId: string;
@@ -36,9 +37,11 @@ export const useFiatTransactionInfoModal = create<FiatTransactionInfoStore>((set
 
 export function FiatTransactionInfoModal() {
   const { isOpen, onClose, transactionInfo } = useFiatTransactionInfoModal();
-  const { data: companyBankAccount, isLoading } = useCompanyBankAccount(
-    transactionInfo?.currency as CurrencyType
-  );
+
+  const { data: companyBankAccount, isLoading } = useQuery({
+    queryKey: ["companyBankAccount", transactionInfo?.currency],
+    queryFn: () => getEnenniBankAccounts(),
+  });
 
   if (!transactionInfo) return null;
 

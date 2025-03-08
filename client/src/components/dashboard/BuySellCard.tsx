@@ -23,15 +23,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useSession } from "next-auth/react";
-import LoginButton from "../auth/login-button";
-import { useBalances } from "@/hooks/use-balances";
+import LoginButton from "@/components/auth/login-button";
 import { calculateTrade, TradeResult } from "@/lib/trade-calculations";
-import { useQuery } from "@tanstack/react-query";
 import { CryptoAsset, fetchCryptoPrice, FiatCurrency, formatCurrency } from "@/lib/utils";
-import { Skeleton } from "../ui/skeleton";
 import { Quote, useQuoteStore } from "@/hooks/use-quote";
 import { nanoid } from "nanoid";
+import { useAuth } from "@/context/AuthContext";
+import { useBalances } from "@/hooks/use-balances";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "../ui/skeleton";
+import { CryptoBalance, FiatBalance } from "@/lib/types/db";
+import React from "react";
+import { ClientOnly } from "@/components/ClientOnly";
+
 const formSchema = z
   .object({
     currency: z.string().min(1, "Please select a currency"),
@@ -44,47 +48,99 @@ const formSchema = z
   });
 
 export function BuySellCard() {
-  const { data: session } = useSession();
+  return (
+    <ClientOnly fallback={
+      <Card className="shadow-md">
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="flex justify-between">
+              <div className="h-6 bg-gray-200 rounded w-20"></div>
+              <div className="h-6 bg-gray-200 rounded w-32"></div>
+            </div>
+            <div className="h-10 bg-gray-200 rounded-md w-full"></div>
+            <div className="h-10 bg-gray-200 rounded-md w-full"></div>
+            <div className="h-10 bg-gray-200 rounded-md w-full"></div>
+            <div className="h-10 bg-gray-200 rounded-md w-full"></div>
+            <div className="h-10 bg-gray-200 rounded-md w-full"></div>
+          </div>
+        </CardContent>
+      </Card>
+    }>
+      <BuySellCardContent />
+    </ClientOnly>
+  );
+}
+
+export function BuySellCardContent() {
+  const { user } = useAuth();
   const [tradeType, setTradeType] = useState<"BUY" | "SELL">("BUY");
   const { toast } = useToast();
-  const { fiatBalances, cryptoBalances, loading: balancesLoading } = useBalances();
   const [tradeResult, setTradeResult] = useState<TradeResult | null>(null);
 
+  // Get balances with proper loading states
+  const { fiatBalances, cryptoBalances, isFiatLoading, isCryptoLoading, isLoading } = useBalances();
 
+  // Initialize form with empty defaults first
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      currency: fiatBalances[0]?.id || "",
-      crypto: cryptoBalances[0]?.id || "",
+      currency: fiatBalances[0]?.currency || "",
+      crypto: cryptoBalances[0]?.cryptoType || "",
       quantity: "",
       amount: "",
     },
   });
 
+  // Update form values when data is loaded - only once when balances are first loaded
+  const initialValuesSetRef = React.useRef(false);
+  
   useEffect(() => {
-    if (fiatBalances.length) form.setValue("currency", fiatBalances[0].id);
-    if (cryptoBalances.length) form.setValue("crypto", cryptoBalances[0].id);
-  }, [fiatBalances, cryptoBalances, form]);
+    // Only set values if we haven't set them yet and balances are loaded
+    if (!initialValuesSetRef.current && !isLoading) {
+      if (fiatBalances?.length > 0) {
+        const currentCurrency = form.getValues("currency");
+        if (!currentCurrency) {
+          form.setValue("currency", fiatBalances[0]?.currency || "");
+        }
+      }
+      
+      if (cryptoBalances?.length > 0) {
+        const currentCrypto = form.getValues("crypto");
+        if (!currentCrypto) {
+          form.setValue("crypto", cryptoBalances[0]?.cryptoType || "");
+        }
+      }
+      
+      initialValuesSetRef.current = true;
+    }
+  }, [fiatBalances, cryptoBalances, isLoading]);
 
-  const selectedCurrency = fiatBalances.find(curr => curr.id === form.watch("currency"));
-  const selectedCrypto = cryptoBalances.find(crypto => crypto.id === form.watch("crypto"));
+  // Find selected currency and crypto with null checks
+  const selectedCurrency = form.watch("currency") 
+    ? fiatBalances?.find((currency: FiatBalance) => currency.currency === form.watch("currency"))
+    : undefined;
 
-  const { data: currentPrice, isLoading: priceLoading, isError: priceError } = useQuery({
-    queryKey: ["crypto-price", selectedCrypto?.id, selectedCurrency?.id],
-    queryFn: () => fetchCryptoPrice(selectedCrypto?.id as CryptoAsset, selectedCurrency?.id as FiatCurrency),
-    refetchInterval: 1000,
-  });
+  const selectedCrypto = form.watch("crypto")
+    ? cryptoBalances?.find((crypto: CryptoBalance) => crypto.cryptoType === form.watch("crypto"))
+    : undefined;
+
+    const { data: currentPrice, isLoading: priceLoading, isError: priceError } = useQuery({
+      queryKey: ["crypto-price", selectedCrypto?.cryptoType, selectedCurrency?.currency],
+      queryFn: () => fetchCryptoPrice(selectedCrypto?.cryptoType as CryptoAsset, selectedCurrency?.currency as FiatCurrency),
+      refetchInterval: 1000,
+    });
+  
 
   const handleInputChange = (field: "quantity" | "amount", value: string) => {
     form.setValue(field, value);
     form.setValue(field === "quantity" ? "amount" : "quantity", "");
 
-    if (!currentPrice?.priceUSD) return;
+    if (!selectedCurrency || !selectedCrypto) return;
 
     const result = calculateTrade({
       tradeType,
       [field]: value,
-      currentPrice: currentPrice.priceUSD,
+      currentPrice: currentPrice?.priceUSD,
       availableFiatBalance: selectedCurrency?.balance,
       availableCryptoBalance: selectedCrypto?.balance,
     });
@@ -102,15 +158,15 @@ export function BuySellCard() {
       toast({
         title: "Insufficient Balance",
         description: type === "FIAT"
-          ? `Insufficient ${selectedCurrency?.id} balance. Required: ${formatCurrency(required, selectedCurrency?.id || "")}, Available: ${formatCurrency(available, selectedCurrency?.id || "")}`
-          : `Insufficient ${selectedCrypto?.id} balance. Required: ${required.toFixed(8)} ${selectedCrypto?.id}, Available: ${available.toFixed(8)} ${selectedCrypto?.id}`,
+          ? `Insufficient ${selectedCurrency?.currency} balance. Required: ${formatCurrency(required, selectedCurrency?.currency || "")}, Available: ${formatCurrency(available, selectedCurrency?.currency || "")}`
+          : `Insufficient ${selectedCrypto?.cryptoType} balance. Required: ${required.toFixed(8)} ${selectedCrypto?.cryptoType}, Available: ${available.toFixed(8)} ${selectedCrypto?.cryptoType}`,
         variant: "destructive",
       });
     }
   };
 
   const handleRequestQuote = async (values: z.infer<typeof formSchema>) => {
-    if (!session) {
+    if (!user) {
       return toast({
         title: "Authentication required",
         description: "Please sign in to request a quote",
@@ -118,10 +174,10 @@ export function BuySellCard() {
       });
     }
 
-    if (!currentPrice?.priceUSD) {
+    if (!selectedCurrency || !selectedCrypto) {
       return toast({
-        title: "Price Error",
-        description: "Unable to get current price. Please try again.",
+        title: "Selection Error",
+        description: "Please select a currency and crypto",
         variant: "destructive",
       });
     }
@@ -130,7 +186,7 @@ export function BuySellCard() {
       tradeType,
       quantity: values.quantity,
       amount: values.amount,
-      currentPrice: currentPrice.priceUSD,
+      currentPrice: currentPrice?.priceUSD,
       availableFiatBalance: selectedCurrency?.balance,
       availableCryptoBalance: selectedCrypto?.balance,
     });
@@ -148,22 +204,23 @@ export function BuySellCard() {
       return toast({
         title: "Insufficient Balance",
         description: type === "FIAT"
-          ? `Insufficient ${selectedCurrency?.id} balance. Required: ${formatCurrency(required, selectedCurrency?.id || "")}, Available: ${formatCurrency(available, selectedCurrency?.id || "")}`
-          : `Insufficient ${selectedCrypto?.id} balance. Required: ${required.toFixed(8)} ${selectedCrypto?.id}, Available: ${available.toFixed(8)} ${selectedCrypto?.id}`,
+          ? `Insufficient ${selectedCurrency?.currency} balance. Required: ${formatCurrency(required, selectedCurrency?.currency || "")}, Available: ${formatCurrency(available, selectedCurrency?.currency || "")}`
+          : `Insufficient ${selectedCrypto?.cryptoType} balance. Required: ${required.toFixed(8)} ${selectedCrypto?.cryptoType}, Available: ${available.toFixed(8)} ${selectedCrypto?.cryptoType}`,
         variant: "destructive",
       });
     }
+
     const quote: Quote = {
       id: nanoid(),
       currency: values.currency,
       crypto: values.crypto,
       tradeType,
-      currentPrice: currentPrice.priceUSD,
+      currentPrice: currentPrice?.priceUSD,
       calculatedAmount: result.calculatedAmount,
       calculatedQuantity: result.calculatedQuantity,
       netAmount: result.netAmount,
       amount: parseFloat(values.amount || "0"),
-      quoteRate: currentPrice.priceUSD,
+      quoteRate: currentPrice?.priceUSD,
       status: "ACTIVE",
       expiresAt: Date.now() + 15000, // 15 seconds
     };
@@ -176,10 +233,23 @@ export function BuySellCard() {
     });
   };
 
+  // Render loading state if data is still loading
+  if (isLoading) {
+    return (
+      <Card className="w-full h-auto">
+        <CardContent className="p-4 flex justify-center items-center h-40">
+          <div className="text-center">
+            <p className="mb-2">Loading balances...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full h-auto">
       <CardContent className="p-4">
-        {!session ? (
+        {!user ? (
           <div className="text-center p-4">
             <p className="mb-4">Please sign in to trade</p>
             <LoginButton mode="modal" asChild>
@@ -199,15 +269,15 @@ export function BuySellCard() {
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
-                          disabled={balancesLoading}
+                          disabled={isFiatLoading}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select Currency" />
                           </SelectTrigger>
                           <SelectContent>
-                            {fiatBalances.map(currency => (
-                              <SelectItem key={currency.id} value={currency.id}>
-                                {currency.name}
+                            {fiatBalances?.map((currency: FiatBalance) => (
+                              <SelectItem key={currency.id} value={currency.currency}>
+                                {currency.currency}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -226,15 +296,15 @@ export function BuySellCard() {
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
-                          disabled={balancesLoading}
+                          disabled={isCryptoLoading}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select Crypto" />
                           </SelectTrigger>
                           <SelectContent>
-                            {cryptoBalances.map(crypto => (
-                              <SelectItem key={crypto.id} value={crypto.id}>
-                                {crypto.name}
+                            {cryptoBalances?.map((crypto: CryptoBalance) => (
+                              <SelectItem key={crypto.id} value={crypto.cryptoType}>
+                                {crypto.cryptoType}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -304,38 +374,36 @@ export function BuySellCard() {
                   )}
                 />
 
-                <Button type="submit" className="h-10" disabled={priceLoading}>
-                  {priceLoading ? "Loading..." : "Request Quote"}
+                <Button 
+                  type="submit" 
+                  className="h-10"
+                  disabled={!selectedCurrency || !selectedCrypto}
+                >
+                  Request Quote
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
 
               {tradeResult && !tradeResult.error && (
                 <div className="mt-4 space-y-2 p-4 border rounded-lg bg-muted/50">
-                  {/* <div className="flex justify-between">
-                    <span>Calculated Amount:</span>
-                    <span className="font-medium">
-                      {formatCurrency(tradeResult.calculatedAmount, selectedCurrency?.id || "")}
-                    </span>
-                  </div> */}
                   <div className="flex justify-between">
                     <span>Quantity:</span>
                     <span className="font-medium">
-                      {tradeResult.calculatedQuantity.toFixed(8)} {selectedCrypto?.id}
+                      {tradeResult.calculatedQuantity.toFixed(8)} {selectedCrypto?.cryptoType}
                     </span>
                   </div>
 
                   <div className="flex justify-between font-bold">
                     <span>Net {tradeType === "BUY" ? "Cost" : "Proceeds"}:</span>
                     <span className={tradeResult.insufficientBalance ? "text-destructive" : ""}>
-                      {formatCurrency(tradeResult.netAmount, selectedCurrency?.id || "")}
+                      {formatCurrency(tradeResult.netAmount, selectedCurrency?.currency || "")}
                     </span>
                   </div>
                   {tradeResult.insufficientBalance && (
                     <div className="mt-2 p-2 border border-destructive rounded text-destructive text-sm">
                       {tradeResult.insufficientBalance.type === "FIAT"
-                        ? `Insufficient ${selectedCurrency?.id} balance`
-                        : `Insufficient ${selectedCrypto?.id} balance`}
+                        ? `Insufficient ${selectedCurrency?.currency} balance`
+                        : `Insufficient ${selectedCrypto?.cryptoType} balance`}
                     </div>
                   )}
                 </div>
@@ -344,15 +412,16 @@ export function BuySellCard() {
               <div className="flex justify-between items-center">
                 {selectedCurrency && (
                   <p className="mt-2 text-md font-bold text-muted-foreground">
-                    Available {selectedCurrency.id}: {formatCurrency(selectedCurrency.balance, selectedCurrency.id)}
+                    Available {selectedCurrency.currency}: {formatCurrency(selectedCurrency.balance, selectedCurrency.currency)}
                   </p>
                 )}
                 {selectedCrypto && (
                   <p className="mt-2 text-md font-bold text-muted-foreground">
-                    Available {selectedCrypto.id}: {formatCurrency(selectedCrypto.balance, selectedCrypto.id)}
+                    Available {selectedCrypto.cryptoType}: {selectedCrypto.balance.toFixed(8)} {selectedCrypto.cryptoType}
                   </p>
                 )}
               </div>
+
               {priceLoading ? (
                 <Skeleton className="h-10 w-32" />
               ) : priceError ? (
@@ -360,7 +429,7 @@ export function BuySellCard() {
               ) : (
                 <div className="text-md font-bold text-muted-foreground">
                   {/* crypto name per fiat currency */}
-                  {formatCurrency(currentPrice?.priceUSD || 0, selectedCrypto?.id || "")} {selectedCurrency?.id}/{selectedCrypto?.id}
+                  {formatCurrency(currentPrice?.priceUSD || 0, selectedCrypto?.cryptoType || "")} {selectedCrypto?.cryptoType}/{selectedCurrency?.currency}
                 </div>
               )}
             </form>

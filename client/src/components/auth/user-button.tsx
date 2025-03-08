@@ -2,8 +2,6 @@
 
 import { ExitIcon } from "@radix-ui/react-icons";
 
-import { useCurrentUser } from "@/hooks/use-current-user";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +12,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { SettingsIcon, User } from "lucide-react";
 import Link from "next/link";
-
+import { useAuth } from "@/context/AuthContext";
 export const UserButton = () => {
-  const user = useCurrentUser();
+  const { user } = useAuth();
 
   return (
     <DropdownMenu>

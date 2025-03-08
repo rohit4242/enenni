@@ -5,15 +5,15 @@ import { ArrowUpRight, MoveDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getFiatBalance } from "@/lib/actions/balance";
 import { BalanceSkeleton } from "./loading-skeleton";
 import { formatCurrency } from "@/lib/utils";
-import { CurrencyType } from "@prisma/client";
+import { CurrencyType } from "@/lib/types/db";
 import { useToast } from "@/hooks/use-toast";
-import { useUserBankAccounts } from "@/hooks/use-user-bank-accounts";
 
 import { FiatDepositModal } from "@/components/modals/transaction/FiatDepositModal";
 import { FiatWithdrawalModal } from "@/components/modals/transaction/FiatWithdrawalModal";
+import { getFiatBalanceByCurrency } from "@/lib/api/fiat-balances";
+import { getBankAccounts } from "@/lib/api/external-bank-accounts";
 
 interface BalanceCardProps {
   currency: CurrencyType;
@@ -30,13 +30,21 @@ export function BalanceCard({ currency, onSuccess }: BalanceCardProps) {
 
   const { data: balanceData, isLoading: isBalanceLoading } = useQuery({
     queryKey: ["balance", "fiat", currency],
-    queryFn: () => getFiatBalance(currency),
+    queryFn: async () => {
+      const balance = await getFiatBalanceByCurrency(currency);
+      return balance.data;
+    },
     staleTime: 30000,
     retry: 1,
   });
 
-  // Retrieve bank accounts for fiat transactions.
-  const { bankAccounts } = useUserBankAccounts();
+  const { data: bankAccounts, isLoading: isBankAccountsLoading, error: bankAccountsError } = useQuery({
+    queryKey: ["bank-accounts"],
+    queryFn: async () => {
+      const data = await getBankAccounts();
+      return data.accounts;
+    },
+  });
 
   const handleDeposit = () => {
     if (!currency) {

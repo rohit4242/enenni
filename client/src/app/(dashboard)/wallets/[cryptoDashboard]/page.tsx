@@ -2,10 +2,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CryptoType } from "@prisma/client";
+import { CryptoType } from "@/lib/types/db";
 import { use } from "react";
 
 import { cryptoTypeSchema } from "@/lib/validations/wallets";
@@ -14,13 +13,14 @@ import { WalletBalanceCard } from "@/app/(dashboard)/wallets/_components/wallet-
 import { WalletsList } from "@/app/(dashboard)/wallets/_components/wallets-list";
 import { TransactionTable } from "@/app/(dashboard)/wallets/_components/transaction-table";
 import { TransactionTableLoadingSkeleton } from "@/app/(dashboard)/balances/_components/loading-skeleton";
+import { useAuth } from "@/context/AuthContext";
 
 interface WalletPageProps {
   params: Promise<{ cryptoDashboard: CryptoType }> & { cryptoDashboard: CryptoType };
 }
 
 export default function WalletPage({ params }: WalletPageProps) {
-  const user = useCurrentUser();
+  const { user } = useAuth();
   const resolvedParams = use(params);
   const cryptoDashboard = resolvedParams.cryptoDashboard.toUpperCase();
   const [isMounted, setIsMounted] = useState(false);
