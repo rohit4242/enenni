@@ -13,9 +13,9 @@ import {
 } from "./ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 export function UserNav() {
-  const { user } = useAuth();
+  const { user, isLoading, isFetching, error, refetch } = useAuthContext();
   const router = useRouter();
 
   return (

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { ClientOnly } from "@/components/ClientOnly";
 
 interface ProtectedRouteProps {
@@ -12,16 +12,16 @@ interface ProtectedRouteProps {
 
 // The inner component that will be wrapped with ClientOnly
 function ProtectedRouteContent({ children }: ProtectedRouteProps) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isFetching, error, refetch } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
     if (isLoading) return;
 
-    if (!isAuthenticated) {
+    if (!user) {
       router.push("/auth/login");
     }
-  }, [isAuthenticated, router, isLoading]);
+  }, [user, router, isLoading]);
 
   if (isLoading) {
     return (

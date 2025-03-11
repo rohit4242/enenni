@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { DateRange } from "react-day-picker";
-import { useCallback } from "react";
+import { useMemo } from "react";
 
 import { columns } from "./columns";
 import { DateRangePicker } from "./date-range-picker";
@@ -33,8 +33,10 @@ import { useToast } from "@/hooks/use-toast";
 import { handleExportOrdersCSV } from "@/lib/utils";
 import { getOrders, OrderFilterParams } from "@/lib/api/orders";
 import { useDebounce } from "@/hooks/use-debounce";
+import { ClientOnly } from "@/components/ClientOnly";
 
-export function OrdersDataTable() {
+// Inner component to prevent hydration issues
+function OrdersDataTableContent() {
   const { toast } = useToast();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -48,8 +50,8 @@ export function OrdersDataTable() {
     pageSize: rowsPerPage,
   });
 
-  // Build filter params for the API call
-  const buildFilterParams = useCallback((): OrderFilterParams => {
+  // Build filter params for the API call - use useMemo to prevent unnecessary recalculations
+  const filterParams = useMemo((): OrderFilterParams => {
     const params: OrderFilterParams = {};
 
     if (dateRange?.from) {
@@ -73,9 +75,9 @@ export function OrdersDataTable() {
     refetch,
     dataUpdatedAt
   } = useQuery({
-    queryKey: ['orders', buildFilterParams()],
+    queryKey: ['orders', filterParams],
     queryFn: async () => {
-      const response = await getOrders(buildFilterParams());
+      const response = await getOrders(filterParams);
       return response;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -85,8 +87,8 @@ export function OrdersDataTable() {
   const orders = data?.orders || [];
 
   // Format the last updated time
-  const lastUpdated = React.useMemo(() => {
-    if (typeof window === 'undefined' || !dataUpdatedAt) return "";
+  const lastUpdated = useMemo(() => {
+    if (!dataUpdatedAt) return "";
     return new Date(dataUpdatedAt).toLocaleString();
   }, [dataUpdatedAt]);
 
@@ -248,5 +250,20 @@ export function OrdersDataTable() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap with ClientOnly to prevent hydration issues
+export function OrdersDataTable() {
+  return (
+    <ClientOnly fallback={
+      <div className="space-y-2 sm:space-y-4 bg-white rounded-lg p-4 shadow-md">
+        <div className="h-8 w-full bg-gray-200 rounded animate-pulse mb-4"></div>
+        <div className="h-10 w-full bg-gray-200 rounded animate-pulse mb-4"></div>
+        <div className="h-64 w-full bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    }>
+      <OrdersDataTableContent />
+    </ClientOnly>
   );
 }

@@ -18,7 +18,7 @@ export function SidebarNav({ className, items }: SidebarNavProps) {
   return (
     <nav
       className={cn(
-        "flex flex-col gap-2 p-4 bg-teal-500 text-white rounded-lg shadow-md",
+        "flex flex-col gap-2 p-4 bg-[#070822] text-white rounded-lg shadow-md",
         className
       )}
     >

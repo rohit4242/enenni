@@ -6,7 +6,7 @@ import { toast, useToast } from "@/hooks/use-toast";
 import { BeatLoader } from "react-spinners";
 import Script from "next/script";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 declare global {
   interface Window {
@@ -17,7 +17,7 @@ declare global {
 }
 
 export default function KYCPage() {
-  const { user,isAuthenticated } = useAuth();
+  const { user } = useAuthContext();
   const router = useRouter();
   const { toast } = useToast();
   const sdkRef = useRef<any>(null);

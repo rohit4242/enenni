@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import CurrencyCard from "@/components/CurrencyCard";
 import { WalletSkeleton } from "./wallets-skeleton";
-import { getCryptoWallets } from "@/lib/api/crypto-wallets";
 import { CryptoBalance } from "@/lib/types/db";
+import { getCryptoBalances } from "@/lib/api/crypto-balances";
 
 export function WalletsList() {
   const params = useParams();
@@ -15,8 +15,8 @@ export function WalletsList() {
   const { data: wallets, isLoading, error } = useQuery({
     queryKey: ["crypto-wallets"],
     queryFn: async () => {
-      const data = await getCryptoWallets();
-      return data.wallets;
+      const data = await getCryptoBalances();
+      return data.data;
     },
   });
 

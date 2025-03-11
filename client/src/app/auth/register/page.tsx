@@ -11,13 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { registerSchema } from "@/lib/validations/auth";
-import { useAuth } from "@/context/AuthContext";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { registerUser } from "@/lib/api/auth";
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const { register } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +47,7 @@ export default function RegisterPage() {
     
     try {
       console.log(values);
-      await register(values.name, values.email, values.password);
+      await registerUser({ name: values.name, email: values.email, password: values.password });
       console.log("Registration successful");
       setSuccess(true);
       setTimeout(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,13 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loginSchema } from "@/lib/validations/auth";
-import { useAuth } from "@/context/AuthContext";
-import { verifyTwoFactor } from "@/lib/api/auth";
+import { loginUser, verifyTwoFactor } from "@/lib/api/auth";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const { login, error: authError } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,19 +35,25 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const result = await login(values.email, values.password);
+      const { data, message } = await loginUser({ email: values.email, password: values.password });
 
-      if (result.requiresTwoFactor) {
+      if (data.user.isTwoFactorEnabled) {
         setEmail(values.email);
         setShowTwoFactor(true);
       } else {
-        // Successful login without 2FA
-        console.log("Login successful, redirecting to dashboard");
-        router.push("/dashboard");
+        // Check if email is verified
+        console.log("data.user.emailVerified", data.user.emailVerified);
+        if (data.user.emailVerified == null) {
+          router.push("/auth/verify-email");
+        } else {
+          // Successful login without 2FA
+          console.log("Login successful, redirecting to dashboard");
+          router.push("/dashboard");
+        }
       }
     } catch (err: any) {
       console.error("Login submission error:", err);
-      setError(err.response?.data?.message || authError || "Login failed. Please try again.");
+      setError(err.response?.data?.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -64,6 +68,7 @@ export default function LoginPage() {
 
     try {
       await verifyTwoFactor({ email, code });
+      console.log("Login successful, redirecting to dashboard");
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid verification code");
@@ -151,7 +156,7 @@ export default function LoginPage() {
           />
 
           <div className="text-sm text-right">
-            <Link href="/auth/reset-password" className="text-blue-600 hover:underline">
+            <Link href="/auth/reset" className="text-blue-600 hover:underline">
               Forgot password?
             </Link>
           </div>

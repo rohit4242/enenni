@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -9,7 +9,7 @@ import { AuthGuard } from "@/components/auth/auth-guard";
 import { disableTwoFactor, enableTwoFactor } from "@/lib/api/user";
 import Image from "next/image";
 export default function TwoFactorPage() {
-  const { user, refreshUser } = useAuth();
+  const { user, refetch } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isEnabling, setIsEnabling] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export default function TwoFactorPage() {
     
     try {
       await disableTwoFactor(); // This API endpoint is used to confirm 2FA setup too
-      await refreshUser();
+      await refetch();
       setSuccess("Two-factor authentication enabled successfully");
       setIsEnabling(false);
       setQrCode(null);
@@ -57,7 +57,7 @@ export default function TwoFactorPage() {
     
     try {
       await disableTwoFactor();
-      await refreshUser();
+      await refetch();
       setSuccess("Two-factor authentication disabled successfully");
       setCode("");
     } catch (err: any) {
