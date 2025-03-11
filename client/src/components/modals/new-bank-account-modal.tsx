@@ -30,7 +30,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileUpload } from "@/components/ui/file-upload";
 import { createBankAccount } from "@/lib/api/external-bank-accounts";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 
 const COUNTRIES = [
@@ -46,7 +46,7 @@ export function NewBankAccountModal() {
   const [loading, setLoading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string>("");
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const form = useForm<NewBankAccountFormValues>({
     resolver: zodResolver(newBankAccountSchema),
     defaultValues: {

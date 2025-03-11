@@ -114,6 +114,47 @@ function LiveChartContent() {
   const [baseAsset, setBaseAsset] = React.useState("BTC")
   const [quoteAsset, setQuoteAsset] = React.useState("USD")
   const [chartType, setChartType] = React.useState<"area" | "bar">("area")
+  const [currentTime, setCurrentTime] = React.useState<string>("");
+
+  // Update time only on client side to avoid hydration mismatch
+  React.useEffect(() => {
+    // Set initial time
+    setCurrentTime(new Date().toISOString());
+    
+    // Update time every second
+    const interval = setInterval(() => {
+      setCurrentTime(new Date().toISOString());
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format date consistently for both server and client
+  const formatDate = (dateString: string, format: 'time' | 'full' = 'time') => {
+    if (!currentTime) return ""; // Don't render time until client-side
+    
+    try {
+      const date = new Date(dateString);
+      
+      if (format === 'full') {
+        return date.toLocaleString('en-US', {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+          second: timeRange === "1h" ? "numeric" : undefined
+        });
+      }
+      
+      return date.toLocaleTimeString('en-US', {
+        hour: "numeric",
+        minute: "numeric",
+        second: timeRange === "1h" ? "numeric" : undefined
+      });
+    } catch (e) {
+      return "";
+    }
+  };
 
   // Fetch chart data with optimized polling
   const {
@@ -135,7 +176,7 @@ function LiveChartContent() {
       ...data,
       data: data.data.map((point: ChartDataPoint) => ({
         ...point,
-        time: new Date(point.time).toISOString(),
+        time: point.time, // Don't transform time here to avoid hydration issues
       })),
     }),
   })
@@ -190,14 +231,7 @@ function LiveChartContent() {
           axisLine={false}
           tickMargin={8}
           minTickGap={32}
-          tickFormatter={(value) => {
-            const date = new Date(value);
-            return date.toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "numeric",
-              second: timeRange === "1h" ? "numeric" : undefined
-            });
-          }}
+          tickFormatter={(value) => currentTime ? formatDate(value) : ""}
         />
         <YAxis
           tickLine={false}
@@ -212,15 +246,7 @@ function LiveChartContent() {
         <ChartTooltip
           content={
             <ChartTooltipContent
-              labelFormatter={(value) => {
-                return new Date(value).toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "numeric",
-                  second: timeRange === "1h" ? "numeric" : undefined
-                });
-              }}
+              labelFormatter={(value) => currentTime ? formatDate(value, 'full') : ""}
               formatter={(value) => {
                 return (
                   <p className="text-muted-foreground">

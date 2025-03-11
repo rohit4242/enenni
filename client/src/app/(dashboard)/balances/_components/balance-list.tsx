@@ -10,7 +10,7 @@ import { CurrencyType, FiatBalance } from "@/lib/types/db";
 
 export function BalanceList() {
   const params = useParams();
-  const currentCurrency = params.currencyName as string;
+  const currentCurrency = params?.currencyName as string;
 
   const { data: balances, isLoading } = useQuery({
     queryKey: ["fiat-balances"],

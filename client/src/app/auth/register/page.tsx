@@ -11,13 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { registerSchema } from "@/lib/validations/auth";
-import { useAuth } from "@/context/AuthContext";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { registerUser } from "@/lib/api/auth";
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const { register } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +33,7 @@ export default function RegisterPage() {
   });
 
   const password = form.watch("password");
-  
+
   const passwordRequirements = [
     { label: "At least 8 characters", valid: password?.length >= 8 },
     { label: "At least one uppercase letter", valid: /[A-Z]/.test(password || "") },
@@ -45,14 +44,12 @@ export default function RegisterPage() {
   const onSubmit = async (values: RegisterFormValues) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      console.log(values);
-      await register(values.name, values.email, values.password);
-      console.log("Registration successful");
+      await registerUser({ name: values.name, email: values.email, password: values.password });
       setSuccess(true);
       setTimeout(() => {
-        router.push("/auth/new-verification");
+        router.push("/auth/verify-email");
       }, 2000);
     } catch (err: any) {
       setError(err.response?.data?.message || "Registration failed. Please try again.");
@@ -67,13 +64,13 @@ export default function RegisterPage() {
         <h1 className="text-2xl font-bold">Create an Account</h1>
         <p className="text-gray-500">Sign up to get started with Enenni</p>
       </div>
-      
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
       {success && (
         <Alert>
           <AlertDescription>
@@ -81,7 +78,7 @@ export default function RegisterPage() {
           </AlertDescription>
         </Alert>
       )}
-      
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -97,7 +94,7 @@ export default function RegisterPage() {
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="email"
@@ -111,7 +108,7 @@ export default function RegisterPage() {
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="password"
@@ -139,13 +136,13 @@ export default function RegisterPage() {
               </FormItem>
             )}
           />
-          
+
           <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading || success}>
             {isLoading ? "Creating account..." : "Create Account"}
           </Button>
         </form>
       </Form>
-      
+
       <div className="text-center text-sm">
         Already have an account?{" "}
         <Link href="/auth/login" className="text-blue-600 hover:underline">

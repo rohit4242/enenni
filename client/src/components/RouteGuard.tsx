@@ -1,10 +1,10 @@
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuthContext } from '@/context/AuthContext';
 
 export const withAuth = (Component: React.ComponentType<any>) => {
   return function AuthGuard(props: any) {
-    const { user, isLoading } = useAuth();
+    const { user, isLoading } = useAuthContext();
     const router = useRouter();
 
     useEffect(() => {

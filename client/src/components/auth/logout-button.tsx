@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { logoutUser } from "@/lib/api/auth";
 import { useRouter } from "next/navigation";
 
 interface LogoutButtonProps {
@@ -9,12 +9,11 @@ interface LogoutButtonProps {
 
 export const LogoutButton = ({ children }: LogoutButtonProps) => {
   const router = useRouter();
-  const { logout } = useAuth();
 
   const onClick = async () => {
-    await logout();
+    await logoutUser();
     router.replace("/auth/login");
-    router.refresh()
+    router.refresh();
   };
 
   return (

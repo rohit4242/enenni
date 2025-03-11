@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { createFiatBalanceTransaction } from "@/lib/api/transactions";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 interface BankAccount {
   id: string;
@@ -29,7 +29,7 @@ interface FiatDepositFormProps {
 
 export function FiatDepositForm({ currency, bankAccounts, onSuccess, onClose }: FiatDepositFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   if (!user) {
     return <div>Loading...</div>;

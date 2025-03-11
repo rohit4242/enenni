@@ -12,9 +12,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { SettingsIcon, User } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 export const UserButton = () => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   return (
     <DropdownMenu>

@@ -28,7 +28,7 @@ import { calculateTrade, TradeResult } from "@/lib/trade-calculations";
 import { CryptoAsset, fetchCryptoPrice, FiatCurrency, formatCurrency } from "@/lib/utils";
 import { Quote, useQuoteStore } from "@/hooks/use-quote";
 import { nanoid } from "nanoid";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { useBalances } from "@/hooks/use-balances";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "../ui/skeleton";
@@ -72,7 +72,7 @@ export function BuySellCard() {
 }
 
 export function BuySellCardContent() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [tradeType, setTradeType] = useState<"BUY" | "SELL">("BUY");
   const { toast } = useToast();
   const [tradeResult, setTradeResult] = useState<TradeResult | null>(null);
@@ -84,8 +84,8 @@ export function BuySellCardContent() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      currency: fiatBalances[0]?.currency || "",
-      crypto: cryptoBalances[0]?.cryptoType || "",
+      currency:  "USD",
+      crypto: "BTC",
       quantity: "",
       amount: "",
     },

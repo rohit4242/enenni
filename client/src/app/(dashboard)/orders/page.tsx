@@ -7,7 +7,6 @@ export default function OrdersPage() {
         <h1 className="text-3xl font-semibold text-white">
           Orders
         </h1>
-        <p className="text-teal-100">View and manage your orders</p>
       </div>
       <OrdersDataTable />
     </div>

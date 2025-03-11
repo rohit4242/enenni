@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { ClientOnly } from "@/components/ClientOnly";
 import { Loader2 } from "lucide-react";
 
@@ -13,14 +13,14 @@ interface AuthGuardProps {
 
 // Inner component that will be wrapped with ClientOnly
 function AuthGuardContent({ children, requiredRole }: AuthGuardProps) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isFetching, error, refetch } = useAuthContext();
   const router = useRouter();
   
   useEffect(() => {
     // Wait for authentication check to complete
     if (!isLoading) {
       // Redirect if not authenticated
-      if (!isAuthenticated) {
+      if (!user) {
         router.push("/auth/login");
       }
       
@@ -29,7 +29,7 @@ function AuthGuardContent({ children, requiredRole }: AuthGuardProps) {
         router.push("/unauthorized");
       }
     }
-  }, [isLoading, isAuthenticated, user, router, requiredRole]);
+  }, [isLoading, user, router, requiredRole]);
   
   // Show loading while checking authentication
   if (isLoading) {
@@ -44,7 +44,7 @@ function AuthGuardContent({ children, requiredRole }: AuthGuardProps) {
   }
   
   // Show nothing if not authenticated or role check fails
-  if (!isAuthenticated || (requiredRole && user?.role !== requiredRole)) {
+  if (!user || (requiredRole && user?.role !== requiredRole)) {
     return null;
   }
   
