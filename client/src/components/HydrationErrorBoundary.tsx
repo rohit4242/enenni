@@ -50,8 +50,7 @@ export class HydrationErrorBoundary extends Component<Props, State> {
     // If we have a hydration error, re-render the children on the client side
     if (this.state.isHydrationError) {
       // Reset the error state
-      this.state.hasError = false;
-      this.state.isHydrationError = false;
+      this.setState({ hasError: false, isHydrationError: false });
       
       // Use a key based on the current time to force a complete re-render
       return (

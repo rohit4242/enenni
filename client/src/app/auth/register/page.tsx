@@ -46,9 +46,7 @@ export default function RegisterPage() {
     setError(null);
     
     try {
-      console.log(values);
       await registerUser({ name: values.name, email: values.email, password: values.password });
-      console.log("Registration successful");
       setSuccess(true);
       setTimeout(() => {
         router.push("/auth/new-verification");

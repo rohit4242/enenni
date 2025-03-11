@@ -33,7 +33,7 @@ const navLinks = [
  */
 function useIsActiveLink(href: string) {
   const pathname = usePathname();
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return pathname === href || pathname?.startsWith(`${href}/`);
 }
 
 export function MainNav({

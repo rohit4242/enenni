@@ -42,7 +42,7 @@ type VerificationFormValues = z.infer<typeof verificationSchema>;
 export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const code = searchParams.get("code");
+  const code = searchParams?.get("code");
   const { user, refetch } = useAuthContext();
   
   const [isVerifying, setIsVerifying] = useState(false);
