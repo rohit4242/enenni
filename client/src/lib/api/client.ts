@@ -14,7 +14,7 @@ const apiClient = axios.create({
   baseURL: API_BASE_URL,
   // In development, we disable withCredentials to avoid CORS issues
   // In production, we enable it for proper cookie handling
-  withCredentials: process.env.NODE_ENV === "production",
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
