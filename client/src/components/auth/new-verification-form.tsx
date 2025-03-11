@@ -14,8 +14,8 @@ const NewVerificationForm = () => {
   const [success, setSuccess] = useState<string | undefined>();
 
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-  const email = searchParams.get("email");
+  const token = searchParams?.get("token");
+  const email = searchParams?.get("email");
 
   const onSubmit = useCallback(async () => {
     if (success || error) return;

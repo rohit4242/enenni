@@ -10,7 +10,7 @@ import { getCryptoBalances } from "@/lib/api/crypto-balances";
 
 export function WalletsList() {
   const params = useParams();
-  const currentCurrency = params.currencyName as string;
+  const currentCurrency = params?.currencyName as string;
 
   const { data: wallets, isLoading, error } = useQuery({
     queryKey: ["crypto-wallets"],

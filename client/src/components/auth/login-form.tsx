@@ -35,9 +35,9 @@ const LoginForm = () => {
   const [selectedTab, setSelectedTab] = useState<string>("Entity");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = searchParams?.get("callbackUrl");
   const urlError =
-    searchParams.get("error") === "OAuthAccountNotLinked"
+    searchParams?.get("error") === "OAuthAccountNotLinked"
       ? "Email already in use with different Provider!"
       : "";
 

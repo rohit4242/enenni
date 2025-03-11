@@ -30,7 +30,7 @@ const NewPasswordForm = () => {
   const [isPending, startTransition] = useTransition();
 
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const token = searchParams?.get("token");
 
   const form = useForm<z.infer<typeof NewPasswordSchema>>({
     resolver: zodResolver(NewPasswordSchema),
