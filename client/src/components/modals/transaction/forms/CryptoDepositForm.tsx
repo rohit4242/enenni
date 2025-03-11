@@ -31,7 +31,7 @@ import { handleCopyAddress } from "@/lib/utils";
 import { getCryptoBalanceByCryptoType } from "@/lib/api/crypto-balances";
 import { useQuery } from "@tanstack/react-query";
 import { createCryptoBalanceTransaction } from "@/lib/api/transactions";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { CryptoType } from "@/types";
 
 interface CryptoDepositFormProps {
@@ -49,7 +49,7 @@ export function CryptoDepositForm({
 }: CryptoDepositFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isQRLoading, setIsQRLoading] = useState(true);
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   if (!user) {
     return <div>Loading...</div>;
   }

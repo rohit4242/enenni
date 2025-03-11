@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -51,7 +51,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 type TwoFactorVerificationValues = z.infer<typeof twoFactorVerificationSchema>;
 
 export default function ProfilePage() {
-  const { user, refreshUser, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isFetching, error, refetch } = useAuthContext();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("general");
   const [isPageLoaded, setIsPageLoaded] = useState(false);
@@ -114,11 +114,11 @@ export default function ProfilePage() {
   useEffect(() => {
     if (isPageLoaded) {
       // If auth loading is complete and user is not authenticated, handle it
-      if (!authLoading && !isAuthenticated) {
+      if (!isLoading && !user) {
         setAuthError("Session expired. Please log in again.");
         // Instead of immediate redirect, show error message
         // router.push('/auth/login');
-      } else if (!authLoading && isAuthenticated && user) {
+      } else if (!isLoading && user) {
         // Reset auth error if authentication succeeds
         setAuthError(null);
 
@@ -129,13 +129,13 @@ export default function ProfilePage() {
         });
       }
     }
-  }, [authLoading, isAuthenticated, user, isPageLoaded, profileForm, router]);
+  }, [isLoading, user, isPageLoaded, profileForm, router]);
 
   // Manual auth refresh function
   const handleAuthRefresh = async () => {
     setIsRefreshingAuth(true);
     try {
-      await refreshUser();
+      await refetch();
       setAuthError(null);
     } catch (err: any) {
       setAuthError("Failed to refresh session. Please log in again.");
@@ -155,7 +155,7 @@ export default function ProfilePage() {
 
     try {
       await updateProfile(values);
-      await refreshUser();
+      await refetch();
       setProfileSuccess("Profile updated successfully");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
@@ -210,7 +210,7 @@ export default function ProfilePage() {
       if (user?.isTwoFactorEnabled) {
         // When disabling 2FA, directly call the API without verification
         await disableTwoFactor();
-        await refreshUser();
+        await refetch();
         setProfileSuccess("Two-factor authentication disabled successfully");
       } else {
         // When enabling 2FA, get QR code
@@ -248,17 +248,17 @@ export default function ProfilePage() {
 
     try {
       // Confirm 2FA enabling
-      const { error, status } = await verifyTwoFactorSetup(values.code);
+      const { success, message } = await verifyTwoFactorSetup(values.code);
 
-      if (status === "success") {
+      if (success) {
         setQrCode(null);
         setMfaSecret(null);
         setShowVerification(false);
-        await refreshUser();
+        await refetch();
         setActiveTab("general"); // Switch back to general tab
-        setProfileSuccess("Two-factor authentication enabled successfully");
+        setProfileSuccess(message);
       } else {
-        console.error("Invalid 2FA verification response:", error);
+        console.error("Invalid 2FA verification response:", message);
         setTwoFactorError("Failed to verify two-factor code. Please try again.");
       }
     } catch (err: any) {
@@ -330,7 +330,7 @@ export default function ProfilePage() {
         )}
 
         {/* Show loading state while authentication is being checked */}
-        {authLoading ? (
+        {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-2">Loading account information...</p>
@@ -674,7 +674,7 @@ export default function ProfilePage() {
                               <Image
                                 src={qrCode}
                                 alt="QR Code"
-                              
+
                                 width={200}
                                 height={200}
                                 className="max-w-[200px]"

@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ModalProvider } from "@/components/providers/modal-provider";
 import { AuthProvider } from "@/context/AuthContext";
+import { HydrationSafeProvider } from "@/components/HydrationSafeProvider";
+import { HydrationErrorBoundary } from "@/components/HydrationErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,15 +31,25 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AuthProvider>
-          <QueryProvider>
-            <div className="flex min-h-screen flex-col">
-              {children}
-            </div>
-            <ModalProvider />
-            <Toaster />
-          </QueryProvider>
-        </AuthProvider>
+        <QueryProvider>
+          <HydrationErrorBoundary>
+            <HydrationSafeProvider
+              fallback={
+                <div className="flex min-h-screen flex-col items-center justify-center">
+                  <div className="h-16 w-16 animate-spin rounded-full border-t-4 border-solid border-primary"></div>
+                </div>
+              }
+            >
+              <AuthProvider>
+                <div className="flex min-h-screen flex-col">
+                  {children}
+                </div>
+                <ModalProvider />
+                <Toaster />
+              </AuthProvider>
+            </HydrationSafeProvider>
+          </HydrationErrorBoundary>
+        </QueryProvider>
       </body>
     </html>
   );

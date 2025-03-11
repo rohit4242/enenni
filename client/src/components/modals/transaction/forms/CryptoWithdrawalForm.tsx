@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { createCryptoBalanceTransaction } from "@/lib/api/transactions";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { CryptoType } from "@/types";
 
 interface CryptoWithdrawalFormProps {
@@ -30,7 +30,7 @@ export function CryptoWithdrawalForm({
   onClose,
 }: CryptoWithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   if (!user) {
     return <div>Loading...</div>;
   }

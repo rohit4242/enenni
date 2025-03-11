@@ -15,6 +15,3 @@ export const createFiatBalance = async (fiatBalance: FiatBalance) => {
   const response = await apiClient.post("/fiat-balances/create", fiatBalance);
   return response.data;
 };
-
-
-

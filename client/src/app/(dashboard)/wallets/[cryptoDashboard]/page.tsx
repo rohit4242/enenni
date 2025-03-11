@@ -13,14 +13,14 @@ import { WalletBalanceCard } from "@/app/(dashboard)/wallets/_components/wallet-
 import { WalletsList } from "@/app/(dashboard)/wallets/_components/wallets-list";
 import { TransactionTable } from "@/app/(dashboard)/wallets/_components/transaction-table";
 import { TransactionTableLoadingSkeleton } from "@/app/(dashboard)/balances/_components/loading-skeleton";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 interface WalletPageProps {
   params: Promise<{ cryptoDashboard: CryptoType }> & { cryptoDashboard: CryptoType };
 }
 
 export default function WalletPage({ params }: WalletPageProps) {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const resolvedParams = use(params);
   const cryptoDashboard = resolvedParams.cryptoDashboard.toUpperCase();
   const [isMounted, setIsMounted] = useState(false);

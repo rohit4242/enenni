@@ -1,11 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useRouter } from "next/navigation";
-import { getCurrentUser, loginUser, logoutUser, registerUser } from '@/lib/api/auth';
-import { verifyTwoFactorSetup } from '@/lib/api/user';
-import Cookies from 'js-cookie';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { ClientOnly } from '@/components/ClientOnly';
+import useAuth from '@/hooks/use-auth';
 
 interface User {
   id: string;
@@ -21,148 +18,30 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  isAuthenticated: boolean;
-  error: string | null;
-  login: (email: string, password: string) => Promise<{ requiresTwoFactor?: boolean }>;
-  verifyTwoFactor: (email: string, code: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  isFetching: boolean;
+  error: any;
+  refetch: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create a default context value to prevent undefined errors
+const defaultContextValue: AuthContextType = {
+  user: null,
+  isLoading: true,
+  isFetching: false,
+  error: null,
+  refetch: () => {},
+};
+
+const AuthContext = createContext<AuthContextType>(defaultContextValue);
 
 // Separate the provider content from the wrapper for cleaner hydration
 function AuthProviderContent({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-
-  // Set email verification status in cookie when user changes
-  useEffect(() => {
-    if (user) {
-      const isVerified = !!user.emailVerified;
-      Cookies.set('emailVerified', isVerified.toString());
-    } else {
-      Cookies.remove('emailVerified');
-    }
-  }, [user]);
-
-  // Fetch current user on mount
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const { data, error, status } = await getCurrentUser();
-        if (status === "success") {
-          setUser(data.user);
-        }
-      } catch (err) {
-        // Not authenticated - that's okay
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCurrentUser();
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { data, status, error, requiresTwoFactor } = await loginUser({ email, password });
-
-      if (requiresTwoFactor) {
-        return { requiresTwoFactor: true };
-      }
-
-      if (status === "success" && data?.user) {
-        Cookies.set('token', data.token);
-        setUser(data.user);
-        router.push('/dashboard');
-        return { requiresTwoFactor: false };
-      } else {
-        setError(error || "Failed to login");
-        return { requiresTwoFactor: false };
-      }
-    } catch (err) {
-      setError("An unexpected error occurred");
-      return { requiresTwoFactor: false };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-
-  const verifyTwoFactor = async (email: string, code: string) => {
-    setError(null);
-    try {
-      const { data, error, status } = await verifyTwoFactorSetup(code);
-
-      if (status === "success" && data?.user) {
-        setUser(data.user);
-        router.push('/dashboard');
-      } else {
-        setError(error || "Failed to verify two-factor code");
-      }
-    } catch (err) {
-      setError("An unexpected error occurred");
-    }
-  };
-
-  const register = async (name: string, email: string, password: string) => {
-    setError(null);
-    try {
-      const { data, error, status } = await registerUser({ name, email, password });
-
-      if (status === "success") {
-        // Don't auto-login after registration, they need to verify email
-        router.push('/auth/verify-email');
-      } else {
-        setError(error || "Failed to register");
-      }
-    } catch (err) {
-      setError("An unexpected error occurred");
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await logoutUser();
-      setUser(null);
-      // Hard refresh to clear all client state
-      router.push('/auth/login');
-      router.refresh();
-    } catch (err) {
-      setError("Failed to logout");
-    }
-  };
-
-  const refreshUser = async () => {
-    try {
-      const { data, status } = await getCurrentUser();
-      if (status === "success") {
-        setUser(data.user);
-      }
-    } catch (err) {
-      // Error fetching user
-    }
-  };
+  const { data, error, isLoading, isFetching, refetch } = useAuth();
+  const user = data?.data?.user || null;
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        error,
-        login,
-        verifyTwoFactor,
-        register,
-        logout,
-        refreshUser,
-      }}
+      value={{ user, error, isLoading, isFetching, refetch }}
     >
       {children}
     </AuthContext.Provider>
@@ -171,16 +50,17 @@ function AuthProviderContent({ children }: { children: ReactNode }) {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   return (
-    <ClientOnly>
+    <ClientOnly fallback={
+      <AuthContext.Provider value={defaultContextValue}>
+        {children}
+      </AuthContext.Provider>
+    }>
       <AuthProviderContent>{children}</AuthProviderContent>
     </ClientOnly>
   );
 }
 
-export function useAuth() {
+export function useAuthContext() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
   return context;
 }

@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { Mail } from "lucide-react";
 
 export default function VerifyPromptPage() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const router = useRouter();
   
   // Redirect to dashboard if already verified

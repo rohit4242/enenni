@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { resendVerificationEmail, verifyEmail } from "@/lib/api/auth";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,7 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
-  const { refreshUser, user } = useAuth();
+  const { user, refetch } = useAuthContext();
   
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -113,7 +113,7 @@ export default function VerifyEmailPage() {
       const { error, status } = await verifyEmail(verificationCode, user?.email || "");
       
       if (status === "success") {
-        await refreshUser();
+        await refetch();
         setIsSuccess(true);
       } else {
         setError(error || "Email verification failed");

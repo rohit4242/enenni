@@ -10,14 +10,14 @@ import { BalanceCard } from "@/app/(dashboard)/balances/_components/balance-card
 import { CurrencyType } from "@/lib/types/db";
 import { BalanceLoadingSkeleton, TransactionTableLoadingSkeleton } from "@/app/(dashboard)/balances/_components/loading-skeleton";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 interface BalancePageProps {
   params: Promise<{ fiatDashboard: string }> & { fiatDashboard: string };
 }
 
 export default function BalancePage({ params }: BalancePageProps) {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const resolvedParams = use(params);
   const fiatDashboard = resolvedParams.fiatDashboard.toUpperCase();
   const [isMounted, setIsMounted] = useState(false);
