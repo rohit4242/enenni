@@ -7,7 +7,7 @@ import { Role } from '@prisma/client';
 
 export const authenticate: MiddlewareHandler = async (c, next) => {
   // Get token from cookies or Authorization header
-  let token = getCookie(c, 'token');
+  let token = getCookie(c, 'access_token');
   
   // If not in cookie, check Authorization header
   const authHeader = c.req.header('Authorization');
@@ -24,6 +24,11 @@ export const authenticate: MiddlewareHandler = async (c, next) => {
   try {
     // Verify the token
     const payload = await jwtVerify(token);
+    
+    // Check if token is an access token
+    if (payload.type !== 'access') {
+      throw new AuthenticationError('Invalid token type');
+    }
     
     // Find the user
     const user = await prisma.user.findUnique({

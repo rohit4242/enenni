@@ -69,7 +69,7 @@ export const getFiatBalanceById = async (c: Context) => {
 // Get all fiat balances for the authenticated user
 export const getUserFiatBalances = async (c: Context) => {
   try {
-    const userId = c.get("user").id;
+    const userId = c.get("user")?.id;
     
     const balances = await fiatBalanceService.getUserFiatBalances(userId);
     

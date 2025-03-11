@@ -8,7 +8,8 @@ import {
   newPasswordSchema, 
   verifyEmailSchema, 
   twoFactorSchema,
-  resendVerificationSchema
+  resendVerificationSchema,
+  refreshTokenSchema
 } from '../schemas/auth.schema';
 import { authenticate } from '../middleware/auth';
 
@@ -22,7 +23,8 @@ authRouter.post('/verify-email', zValidator('json', verifyEmailSchema), authHand
 authRouter.post('/reset-password', zValidator('json', resetPasswordSchema), authHandler.resetPassword);
 authRouter.post('/new-password', zValidator('json', newPasswordSchema), authHandler.newPassword);
 authRouter.post('/two-factor', zValidator('json', twoFactorSchema), authHandler.verifyTwoFactorToken);
-authRouter.post('/resend-verification', zValidator('json', resendVerificationSchema), authHandler.resendVerification);
+authRouter.post('/resend-verification', zValidator('json', resendVerificationSchema), authHandler.handleResendVerification);
+authRouter.post('/refresh-token', zValidator('json', refreshTokenSchema), authHandler.refreshToken);
 
 // Protected routes
 authRouter.get('/me', authenticate, authHandler.me);

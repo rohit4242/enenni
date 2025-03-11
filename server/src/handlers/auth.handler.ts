@@ -8,10 +8,18 @@ import { ValidationError } from "../errors/AppError";
  */
 export const register = async (c: Context) => {
   const data = await c.req.json();
-  const { user, token } = await authService.register(data);
+  const { user, accessToken, refreshToken } = await authService.register(data);
 
-  // Set cookie
-  setCookie(c, "token", token, {
+  // Set cookies
+  setCookie(c, "access_token", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 15 * 60, // 15 minutes
+  });
+  
+  setCookie(c, "refresh_token", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -26,6 +34,7 @@ export const register = async (c: Context) => {
     status: "success",
     data: {
       user: userWithoutPassword,
+      accessToken, // Include token in response for non-cookie clients
     },
   }, 201);
 };
@@ -35,7 +44,7 @@ export const register = async (c: Context) => {
  */
 export const login = async (c: Context) => {
   const data = await c.req.json();
-  const { user, token } = await authService.login(data);
+  const { user, accessToken, refreshToken } = await authService.login(data);
 
   // If two-factor auth is enabled, don't set the cookie
   if (user.isTwoFactorEnabled) {
@@ -50,15 +59,22 @@ export const login = async (c: Context) => {
     }, 200);
   }
 
-  // Set cookie
-  setCookie(c, 'token', token, {
+  // Set cookies
+  setCookie(c, "access_token", accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 15 * 60, // 15 minutes
+  });
+  
+  setCookie(c, "refresh_token", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
     maxAge: 7 * 24 * 60 * 60, // 7 days
   });
-
 
   // Also add token to response for clients that can't use cookies
   // Remove password from response
@@ -66,9 +82,10 @@ export const login = async (c: Context) => {
 
   return c.json({
     status: 'success',
+    message: 'Logged in successfully',
     data: {
       user: userWithoutPassword,
-      token: token // Include token in response for non-cookie clients
+      accessToken, // Include token in response for non-cookie clients
     }
   }, 200);
 };
@@ -77,14 +94,32 @@ export const login = async (c: Context) => {
  * Handle user logout
  */
 export const logout = async (c: Context) => {
-  // Clear cookie
-  setCookie(c, 'token', '', {
+  // Get refresh token from cookie
+  const refreshToken = c.req.header('Authorization')?.split(' ')[1];
+  
+  if (refreshToken) {
+    // Invalidate the refresh token
+    await authService.invalidateRefreshToken(refreshToken);
+  }
+  
+  // Clear cookies
+  setCookie(c, 'access_token', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 0, // Expires immediately
   });
+  
+  setCookie(c, 'refresh_token', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0, // Expires immediately
+  });
+
+  console.log("Logged out successfully");
 
   return c.json({
     status: 'success',
@@ -141,21 +176,103 @@ export const newPassword = async (c: Context) => {
  */
 export const verifyTwoFactorToken = async (c: Context) => {
   const data = await c.req.json();
-  const { token } = await authService.verifyTwoFactorToken(data);
+  const { accessToken, refreshToken } = await authService.verifyTwoFactorToken(data);
 
-  // Set cookie
-  setCookie(c, 'token', token, {
+  // Set cookies
+  setCookie(c, "access_token", accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 15 * 60, // 15 minutes
+  });
+  
+  setCookie(c, "refresh_token", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
     maxAge: 7 * 24 * 60 * 60, // 7 days
   });
 
   return c.json({
     status: 'success',
-    message: 'Two-factor authentication successful'
+    message: 'Two-factor authentication successful',
+    data: {
+      accessToken,
+    }
   }, 200);
+};
+
+/**
+ * Refresh access token
+ */
+export const refreshToken = async (c: Context) => {
+  // Get refresh token from cookie or request body
+  let refreshToken = c.req.header('Authorization')?.split(' ')[1];
+  
+  // If not in cookie, check request body
+  if (!refreshToken) {
+    const data = await c.req.json();
+    refreshToken = data.refreshToken;
+  }
+  
+  if (!refreshToken) {
+    return c.json({
+      status: 'error',
+      message: 'Refresh token is required'
+    }, 400);
+  }
+  
+  try {
+    const { accessToken, refreshToken: newRefreshToken } = await authService.refreshAccessToken({ refreshToken });
+    
+    // Set cookies
+    setCookie(c, "access_token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 15 * 60, // 15 minutes
+    });
+    
+    setCookie(c, "refresh_token", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+    
+    return c.json({
+      status: 'success',
+      data: {
+        accessToken,
+      }
+    }, 200);
+  } catch (error) {
+    // Clear cookies on error
+    setCookie(c, 'access_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
+    
+    setCookie(c, 'refresh_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
+    
+    return c.json({
+      status: 'error',
+      message: 'Invalid refresh token'
+    }, 401);
+  }
 };
 
 /**
@@ -182,7 +299,7 @@ export const me = async (c: Context) => {
 /**
  * Handle resend verification
  */
-export const resendVerification = async (c: Context) => {
+export const handleResendVerification = async (c: Context) => {
   const data = await c.req.json();
   await authService.resendVerification(data.email);
 

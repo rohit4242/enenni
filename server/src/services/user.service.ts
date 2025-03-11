@@ -217,10 +217,25 @@ export const verifyTwoFactorCode = async (userId: string, code: string): Promise
  * Create two-factor confirmation for a user after successful verification
  */
 export const createTwoFactorConfirmation = async (userId: string): Promise<void> => {
+  // Check if a confirmation already exists for the user
+  const existingConfirmation = await prisma.twoFactorConfirmation.findUnique({
+    where: { userId },
+  });
+
+  if (existingConfirmation) {
+    // Optionally, you can update the existing confirmation if needed
+    // await prisma.twoFactorConfirmation.update({
+    //   where: { userId },
+    //   data: { /* update fields if necessary */ },
+    // });
+    return; // Exit if a confirmation already exists
+  }
+
+  // Create a new two-factor confirmation
   await prisma.twoFactorConfirmation.create({
     data: {
-      userId
-    }
+      userId,
+    },
   });
 };
 

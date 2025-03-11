@@ -4,7 +4,8 @@ export const config = {
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'your-super-secret-jwt-token-key',
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m', // Shorter expiration for access tokens
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // Longer expiration for refresh tokens
   },
   app: {
     port: process.env.PORT || 4000,

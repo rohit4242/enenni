@@ -1,26 +1,26 @@
 # Use the official Bun image - latest stable version
-FROM oven/bun:latest as build
+FROM oven/bun:latest AS build
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and lock file
+# First, copy only the prisma directory
+COPY prisma ./prisma
+
+# Then copy package.json and lock file
 COPY package.json bun.lock ./
 
 # Install dependencies 
-RUN bun install --frozen-lockfile
+RUN bun install 
 
 # Copy application code
 COPY . .
-
-# Generate Prisma client
-RUN bunx prisma generate
 
 # Build the application
 RUN bun run build
 
 # Start a new stage for a smaller production image
-FROM oven/bun:latest as production
+FROM oven/bun:latest AS production
 
 WORKDIR /app
 
@@ -33,10 +33,26 @@ COPY --from=build /app/prisma ./prisma
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3004
+ENV PORT=4000
+ENV DATABASE_URL="postgresql://neondb_owner:npg_wgsVD1Jo0mXA@ep-dark-dust-a12xfwud-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+ENV FRONTEND_URL="https://master.d3ebw7uy1supky.amplifyapp.com"
+ENV CORS_ORIGINS="https://master.d3ebw7uy1supky.amplifyapp.com"
+ENV JWT_SECRET="your-super-secret-jwt-token-key"
+ENV JWT_EXPIRES_IN="7d"
+ENV RESEND_API_KEY="re_QLpqNHrP_9rMGdZbUENE1Cvk3SnyyKT9Z"
+ENV FROM_EMAIL="onboarding@resend.dev"
+ENV FROM_NAME="Enenni"
+ENV BRAND_COLOR="#2563EB"
+ENV TWO_FACTOR_SECRET="your-super-secret-two-factor-secret-key"
+ENV TWO_FACTOR_PERIOD=300
+ENV TWO_FACTOR_DIGITS=6
+ENV S3_ACCESS_KEY_ID="AKIA4WJPWPQVJJRFG2N4"
+ENV S3_SECRET_ACCESS_KEY="y7VGXyt5txKdsKlQk8FYS4iE/ZLW9DL52e4C9mig"
+ENV S3_BUCKET_NAME="enenni-bank-accounts-images"
+ENV S3_REGION="us-east-1"
 
 # Expose the port
-EXPOSE 3004
+EXPOSE 4000
 
 # Start the application
 CMD ["bun", "run", "start"]

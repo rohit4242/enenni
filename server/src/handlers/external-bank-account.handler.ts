@@ -4,7 +4,7 @@ import { TransactionStatus } from "@prisma/client";
 import prisma from "../lib/prisma";
 // Get all bank accounts for the authenticated user
 export const getUserBankAccounts = async (c: Context) => {
-  const userId = c.get("userId");
+  const userId = c.get("user").id;
 
   const accounts = await prisma.userBankAccount.findMany({
     where: { userId },
@@ -16,7 +16,7 @@ export const getUserBankAccounts = async (c: Context) => {
 
 // Get a specific bank account by ID
 export const getBankAccountById = async (c: Context) => {
-  const userId = c.get("userId");
+  const userId = c.get("user").id;
   const accountId = c.req.param("id");
 
   const account = await prisma.userBankAccount.findUnique({
@@ -85,7 +85,7 @@ export const createBankAccount = async (c: Context) => {
 
 // Update an existing bank account
 export const updateBankAccount = async (c: Context) => {
-  const userId = c.get("userId");
+  const userId = c.get("user").id;
   const accountId = c.req.param("id");
   const data = await c.req.json();
 
@@ -125,7 +125,7 @@ export const updateBankAccount = async (c: Context) => {
 
 // Delete a bank account
 export const deleteBankAccount = async (c: Context) => {
-  const userId = c.get("userId");
+  const userId = c.get("user").id;
   const accountId = c.req.param("id");
 
   // Find the account first
@@ -205,7 +205,7 @@ export const getAllBankAccounts = async (c: Context) => {
 
 // Update proof document URL
 export const updateProofDocument = async (c: Context) => {
-  const userId = c.get("userId");
+  const userId = c.get("user").id;
   const accountId = c.req.param("id");
   const { proofDocumentUrl } = await c.req.json();
 

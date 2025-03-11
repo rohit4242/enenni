@@ -26,7 +26,7 @@ export const sendVerificationEmail = async (
   try {
     console.log('Sending verification email to:', email);
     const result = await resend.emails.send({
-      from: `${config.email.fromName} <${config.email.fromEmail}>`,
+      from: `${config.email.fromName} <onboarding@resend.dev>`,
       to: "genrativeai1@gmail.com",
       subject,
       text,
@@ -46,7 +46,7 @@ export const sendPasswordResetEmail = async (
   email: string,
   token: string
 ): Promise<void> => {
-  const resetUrl = `${config.app.frontendUrl}/auth/reset-password?token=${token}`;
+  const resetUrl = `${config.app.frontendUrl}/auth/new-password?token=${token}`;
   
   const { subject, text, html } = passwordResetTemplate(
     resetUrl,
@@ -56,7 +56,7 @@ export const sendPasswordResetEmail = async (
   try {
     console.log('Sending password reset email to:', email);
     const result = await resend.emails.send({
-      from: `${config.email.fromName} <${config.email.fromEmail}>`,
+      from: `${config.email.fromName} <onboarding@resend.dev>`,
       to: "genrativeai1@gmail.com",
       subject,
       text,
@@ -108,7 +108,7 @@ export const sendTwoFactorEnabledEmail = async (
   try {
     console.log('Sending two-factor enabled email to:', email);
     const result = await resend.emails.send({
-      from: `${config.email.fromName} <${config.email.fromEmail}>`,
+      from: `${config.email.fromName} <onboarding@resend.dev>`,
       to: "genrativeai1@gmail.com",
       subject,
       text,
