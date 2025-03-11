@@ -14,28 +14,28 @@ const publicRoutes = [
   "/auth/register",
   "/auth/new-password",
   "/auth/verify-email",
-  "/auth/new-verification",
   "/auth/reset",
+  "/auth/error",
 ];
-
 
 export default async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  
+
   // Skip middleware for APIs and static files
-  if (path.startsWith('/api/') || path.includes('.')) {
+  if (path.startsWith("/api/") || path.includes(".")) {
     return NextResponse.next();
   }
-  
+
   // More flexible matching using .some() and startsWith
-  const isProtectedRoute = protectedRoutes.some(route => 
-    path === route || path.startsWith(`${route}/`)
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => path === route || path.startsWith(`${route}/`)
   );
-  
-  const isPublicRoute = publicRoutes.some(route => 
-    path === route || path.startsWith(`${route}/`)
-  ) || path.startsWith('/auth/'); // Allow all auth paths
-  
+
+  const isPublicRoute =
+    publicRoutes.some(
+      (route) => path === route || path.startsWith(`${route}/`)
+    ) || path.startsWith("/auth/"); // Allow all auth paths
+
   const accessToken = req.cookies.get("access_token")?.value;
 
   // For protected routes, redirect to login if no token
@@ -62,6 +62,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
   ],
 };

@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { useAuthContext } from "@/context/AuthContext";
 export function UserNav() {
-  const { user, isLoading, isFetching, error, refetch } = useAuthContext();
+  const { user } = useAuthContext();
   const router = useRouter();
 
   return (
