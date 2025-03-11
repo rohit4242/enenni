@@ -1,5 +1,5 @@
 import { AxiosError } from "axios";
-import apiClient, { setAuthTokens } from "./client";
+import apiClient, { clearAuthTokens, setAuthTokens } from "./client";
 
 // Store tokens in memory for non-cookie clients
 let accessToken: string | null = null;
@@ -95,6 +95,7 @@ export const logoutUser = async () => {
   try {
     const response = await apiClient.post("/auth/logout");
     clearTokens();
+    clearAuthTokens();
     return response.data;
   } catch (error) {
     clearTokens();

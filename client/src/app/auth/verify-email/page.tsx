@@ -8,7 +8,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { resendVerificationEmail, verifyEmail } from "@/lib/api/auth";
 import { Input } from "@/components/ui/input";
-import { 
+import {
   Card,
   CardContent,
   CardDescription,
@@ -16,7 +16,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { 
+import {
   Form,
   FormControl,
   FormField,
@@ -44,13 +44,19 @@ export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const code = searchParams?.get("code");
   const { user, refetch } = useAuthContext();
-  
+
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
-  
+
+  useEffect(() => {
+    if (user?.emailVerified) {
+      router.push("/dashboard");
+    }
+  }, [user?.emailVerified, router]);
+
   // Initialize form with default values
   const form = useForm<VerificationFormValues>({
     resolver: zodResolver(verificationSchema),
@@ -63,17 +69,17 @@ export default function VerifyEmailPage() {
       digit6: code ? code[5] : "",
     },
   });
-  
+
   // Handle input focus movement
   const handleDigitInput = (e: React.ChangeEvent<HTMLInputElement>, field: keyof VerificationFormValues) => {
     const value = e.target.value;
     const isValid = /^[0-9]$/.test(value);
-    
+
     if (isValid) {
       form.setValue(field, value);
       const fieldNumber = parseInt(field.replace('digit', ''));
       const nextField = `digit${fieldNumber + 1}` as keyof VerificationFormValues;
-      
+
       if (nextField in form.getValues() && fieldNumber < 6) {
         const nextInput = document.querySelector(`input[name=${nextField}]`) as HTMLInputElement;
         if (nextInput) {
@@ -86,7 +92,7 @@ export default function VerifyEmailPage() {
       e.preventDefault();
     }
   };
-  
+
   // Handle backspace key navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, field: keyof VerificationFormValues) => {
     if (e.key === 'Backspace' && !form.getValues()[field]) {
@@ -100,18 +106,18 @@ export default function VerifyEmailPage() {
       }
     }
   };
-  
+
   // Handle form submission
   const onSubmit = async (data: VerificationFormValues) => {
     setIsVerifying(true);
     setError(null);
-    
-    const verificationCode = 
+
+    const verificationCode =
       data.digit1 + data.digit2 + data.digit3 + data.digit4 + data.digit5 + data.digit6;
-    
+
     try {
       const { error, status } = await verifyEmail(verificationCode, user?.email || "");
-      
+
       if (status === "success") {
         await refetch();
         setIsSuccess(true);
@@ -124,12 +130,12 @@ export default function VerifyEmailPage() {
       setIsVerifying(false);
     }
   };
-  
+
   // Auto-submit when all digits are filled and valid
   useEffect(() => {
     const values = form.getValues();
     const allFilled = Object.values(values).every(value => value && /^[0-9]$/.test(value));
-    
+
     if (allFilled && !isVerifying && !isSuccess) {
       form.handleSubmit(onSubmit)();
     }
@@ -137,11 +143,11 @@ export default function VerifyEmailPage() {
 
   const handleResendVerificationEmail = async () => {
     if (!user?.email) return;
-    
+
     setIsResending(true);
     setError(null);
     setResendSuccess(null);
-    
+
     try {
       const { status } = await resendVerificationEmail(user?.email || "");
       if (status === "success") {
@@ -149,14 +155,14 @@ export default function VerifyEmailPage() {
       } else {
         setError("Failed to resend verification code");
       }
-    } catch (err) {
-      setError("Failed to resend verification code");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to resend verification code");
     } finally {
       setIsResending(false);
     }
   };
 
-  
+
   return (
     <div className="max-w-md w-full mx-auto space-y-6 p-6 bg-white shadow-lg rounded-lg">
       {isSuccess ? (
@@ -230,9 +236,9 @@ export default function VerifyEmailPage() {
                     );
                   })}
                 </div>
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   className="w-full bg-teal-500 text-white hover:bg-teal-600"
                   loading={isVerifying}
                   disabled={isVerifying || !form.formState.isValid}
@@ -250,9 +256,9 @@ export default function VerifyEmailPage() {
             </Form>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
-            <Button 
-              variant="outline" 
-              className="w-full border-gray-300 text-gray-700 hover:bg-gray-100" 
+            <Button
+              variant="outline"
+              className="w-full border-gray-300 text-gray-700 hover:bg-gray-100"
               onClick={() => router.push("/auth/login")}
             >
               Back to Login

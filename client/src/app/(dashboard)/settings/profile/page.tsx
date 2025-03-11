@@ -348,9 +348,6 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Profile Information</CardTitle>
-                  <CardDescription>
-                    Update your account details and public profile information
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...profileForm}>

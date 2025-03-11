@@ -12,15 +12,9 @@ const REFRESH_TOKEN_COOKIE = "refresh_token";
 // Create axios instance with environment-aware configuration
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  // In development, we disable withCredentials to avoid CORS issues
-  // In production, we enable it for proper cookie handling
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
-    "Accept": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
   },
 });
 
@@ -36,7 +30,7 @@ const refreshAccessToken = async () => {
     const response = await axios.post(
       `${API_BASE_URL}/auth/refresh-token`,
       { refreshToken },
-      { withCredentials: process.env.NODE_ENV === "production" }
+      { withCredentials: true }
     );
     
     const { accessToken } = response.data.data;

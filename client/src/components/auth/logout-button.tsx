@@ -13,7 +13,7 @@ export const LogoutButton = ({ children }: LogoutButtonProps) => {
   const onClick = async () => {
     await logoutUser();
     router.replace("/auth/login");
-    router.refresh()
+    router.refresh();
   };
 
   return (
