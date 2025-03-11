@@ -13,6 +13,7 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
     .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" })
     .regex(/[0-9]/, { message: "Password must contain at least one number" }),
+  accountType: z.enum(["individual", "entity"], { message: "Please select an account type" }),
 });
 
 export const resetPasswordSchema = z.object({

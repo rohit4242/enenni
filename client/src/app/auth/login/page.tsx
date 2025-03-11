@@ -49,6 +49,7 @@ export default function LoginPage() {
           // Successful login without 2FA
           console.log("Login successful, redirecting to dashboard");
           router.push("/dashboard");
+          router.refresh();
         }
       }
     } catch (err: any) {

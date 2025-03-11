@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { registerSchema } from "@/lib/validations/auth";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { registerUser } from "@/lib/api/auth";
+import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent } from "@/components/ui/select";
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -28,6 +29,7 @@ export default function RegisterPage() {
       name: "",
       email: "",
       password: "",
+      accountType: undefined,
     },
     mode: "onChange",
   });
@@ -46,7 +48,12 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await registerUser({ name: values.name, email: values.email, password: values.password });
+      await registerUser({ 
+        name: values.name, 
+        email: values.email, 
+        password: values.password,
+        isEntity: values.accountType === "entity"
+      });
       setSuccess(true);
       setTimeout(() => {
         router.push("/auth/verify-email");
@@ -88,9 +95,37 @@ export default function RegisterPage() {
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="John Doe" {...field} />
+                  <Input placeholder="Enter the name" {...field} />
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="accountType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Select the account type</FormLabel>
+                <FormControl> 
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormItem>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="individual">Individual</SelectItem>
+                        <SelectItem value="entity">Entity</SelectItem>
+                      </SelectContent>
+                    </FormItem>
+                  </Select>
+                </FormControl>
               </FormItem>
             )}
           />

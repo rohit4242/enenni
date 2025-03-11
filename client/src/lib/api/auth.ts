@@ -55,6 +55,7 @@ export const registerUser = async (data: {
   name: string;
   email: string;
   password: string;
+  isEntity: boolean;
 }) => {
   const response = await apiClient.post("/auth/register", data);
 
