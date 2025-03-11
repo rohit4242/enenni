@@ -105,6 +105,7 @@ model User {
   mfaEnabled           Boolean   @default(false)
   mfaSecret            String?
   mfaQrCode            String?   // To store QR code URL
+  isEntity             Boolean   @default(false)
   // Relations
   accounts             Account[]
   sessions             Session[]

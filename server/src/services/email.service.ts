@@ -26,8 +26,8 @@ export const sendVerificationEmail = async (
   try {
     console.log('Sending verification email to:', email);
     const result = await resend.emails.send({
-      from: `${config.email.fromName} <onboarding@resend.dev>`,
-      to: "genrativeai1@gmail.com",
+      from: `${config.email.fromName}@${config.email.fromEmail}`,
+      to: email,
       subject,
       text,
       html,
@@ -56,8 +56,8 @@ export const sendPasswordResetEmail = async (
   try {
     console.log('Sending password reset email to:', email);
     const result = await resend.emails.send({
-      from: `${config.email.fromName} <onboarding@resend.dev>`,
-      to: "genrativeai1@gmail.com",
+      from: `${config.email.fromName}@${config.email.fromEmail}`,
+      to: email,
       subject,
       text,
       html,
@@ -82,8 +82,8 @@ export const sendPasswordResetSuccessEmail = async (
   try {
     console.log('Sending password reset success email to:', email);
     const result = await resend.emails.send({
-      from: `${config.email.fromName} <${config.email.fromEmail}>`,
-      to: "genrativeai1@gmail.com",
+      from: `${config.email.fromName}@${config.email.fromEmail}`,
+      to: email,
       subject,
       text,
       html,
@@ -108,8 +108,8 @@ export const sendTwoFactorEnabledEmail = async (
   try {
     console.log('Sending two-factor enabled email to:', email);
     const result = await resend.emails.send({
-      from: `${config.email.fromName} <onboarding@resend.dev>`,
-      to: "genrativeai1@gmail.com",
+      from: `${config.email.fromName} <${config.email.fromEmail}>`,
+      to: email,
       subject,
       text,
       html,
@@ -134,8 +134,8 @@ export const sendTwoFactorDisabledEmail = async (
   try {
     console.log('Sending two-factor disabled email to:', email);
     const result = await resend.emails.send({
-      from: `${config.email.fromName} <${config.email.fromEmail}>`,
-      to: "genrativeai1@gmail.com",
+      from: `${config.email.fromName}@${config.email.fromEmail}`,
+      to: email,
       subject,
       text,
       html,

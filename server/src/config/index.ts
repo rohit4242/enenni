@@ -16,7 +16,7 @@ export const config = {
   },
   email: {
     resendApiKey: process.env.RESEND_API_KEY || '',
-    fromEmail: process.env.FROM_EMAIL || 'hello@enenni.com',
+    fromEmail: process.env.FROM_EMAIL || '<onboarding@resend.dev>',
     fromName: process.env.FROM_NAME || 'Enenni',
     brandColor: process.env.BRAND_COLOR || '#2563EB',
   },
@@ -25,4 +25,4 @@ export const config = {
     period: process.env.TWO_FACTOR_PERIOD || 300, // 5 minutes
     digits: process.env.TWO_FACTOR_DIGITS || 6,
   },
-}; 
+};

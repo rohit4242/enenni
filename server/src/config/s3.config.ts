@@ -1,4 +1,4 @@
-import { S3Client } from 'bun';
+import { S3Client } from "bun";
 
 // Load environment variables for S3 configuration
 export const s3Config = {

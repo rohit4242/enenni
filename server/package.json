@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun run dist/index.js",
-    "build": "bun build src/index.ts --outdir ./dist --target node --minify",
+    "build": "bun build src/index.ts --outdir ./dist --target bun --minify",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

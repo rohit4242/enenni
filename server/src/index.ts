@@ -23,7 +23,7 @@ app.use("*", errorHandler);
 app.use(
   "*",
   cors({
-    origin: "*",
+    origin: config.app.corsOrigins || "*",
     credentials: true,
     allowHeaders: [
       "Authorization",

@@ -48,6 +48,7 @@ export const register = async (
       name: data.name,
       email: data.email,
       password: hashedPassword,
+      isEntity: data.isEntity,
     },
   });
 
@@ -121,6 +122,7 @@ export const login = async (
           email: user.email,
           isTwoFactorEnabled: true,
           // Add necessary fields only
+          isEntity: user.isEntity,
           name: null,
           emailVerified: null,
           password: null,
