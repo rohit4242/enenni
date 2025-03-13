@@ -51,6 +51,7 @@ const RegisterForm = () => {
         name: values.name,
         email: values.email,
         password: values.password,
+        isEntity: selectedTab === "Entity",
       }).then((data) => {
         setError(data.error);
         setSuccess(data.success);
