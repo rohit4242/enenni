@@ -51,7 +51,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 type TwoFactorVerificationValues = z.infer<typeof twoFactorVerificationSchema>;
 
 export default function ProfilePage() {
-  const { user, isLoading, isFetching, error, refetch } = useAuthContext();
+  const { user, isLoading, refetch } = useAuthContext();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("general");
   const [isPageLoaded, setIsPageLoaded] = useState(false);

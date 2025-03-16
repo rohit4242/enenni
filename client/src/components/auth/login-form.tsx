@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { LoginSchema } from "@/lib/schemas";
 import { useQueryClient } from "@tanstack/react-query";
+import Cookies from "js-cookie";
 
 import {
   Form,
@@ -78,8 +79,33 @@ const LoginForm = () => {
           if (!data?.error && !data?.mfaRequired) {
             form.reset();
             setSuccess("Logged in successfully!");
+            
+            // Set email_verified cookie based on verification status
+            if (data.data?.user?.emailVerified) {
+              Cookies.set("email_verified", "true", {
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                path: "/",
+                expires: 30 // 30 days
+              });
+            } else {
+              Cookies.set("email_verified", "false", {
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                path: "/",
+                expires: 30 // 30 days
+              });
+            }
+            
+            // Invalidate the auth query to refresh user data
             queryClient.invalidateQueries({ queryKey: ["authUser"] });
-            router.push('/');
+            
+            // Redirect based on email verification status
+            if (!data.data?.user?.emailVerified) {
+              router.push("/auth/verify-email");
+            } else {
+              router.push('/');
+            }
           }
         })
         .catch((error) => {

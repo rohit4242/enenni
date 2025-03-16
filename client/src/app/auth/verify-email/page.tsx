@@ -26,6 +26,7 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import Cookies from "js-cookie";
 
 // Form schema for verification code
 const verificationSchema = z.object({
@@ -119,6 +120,14 @@ export default function VerifyEmailPage() {
       const { error, status } = await verifyEmail(verificationCode, user?.email || "");
 
       if (status === "success") {
+        // Set email_verified cookie
+        Cookies.set("email_verified", "true", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+        
         await refetch();
         setIsSuccess(true);
       } else {

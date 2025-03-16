@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loginSchema } from "@/lib/validations/auth";
 import { loginUser, verifyTwoFactor } from "@/lib/api/auth";
 import { useQueryClient } from "@tanstack/react-query";
+import Cookies from "js-cookie";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
@@ -45,6 +46,24 @@ export default function LoginPage() {
       } else {
         // Check if email is verified
         console.log("data.user.emailVerified", data.user.emailVerified);
+        
+        // Set email_verified cookie based on verification status
+        if (data.user.emailVerified) {
+          Cookies.set("email_verified", "true", {
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            expires: 30 // 30 days
+          });
+        } else {
+          Cookies.set("email_verified", "false", {
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            expires: 30 // 30 days
+          });
+        }
+        
         if (data.user.emailVerified == null) {
           router.push("/auth/verify-email");
         } else {
@@ -72,12 +91,35 @@ export default function LoginPage() {
     const code = (e.currentTarget.elements.namedItem("code") as HTMLInputElement).value;
 
     try {
-      await verifyTwoFactor({ email, code });
+      const response = await verifyTwoFactor({ email, code });
       console.log("Login successful, redirecting to dashboard");
+      
+      // Set email_verified cookie based on verification status
+      if (response.data.user.emailVerified) {
+        Cookies.set("email_verified", "true", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+      } else {
+        Cookies.set("email_verified", "false", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+      }
+      
       // Invalidate the auth query to refresh user data
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      router.push("/");
-      router.refresh();
+      
+      if (!response.data.user.emailVerified) {
+        router.push("/auth/verify-email");
+      } else {
+        router.push("/");
+        router.refresh();
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid verification code");
     } finally {

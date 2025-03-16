@@ -185,6 +185,7 @@ export const setAuthTokens = (accessToken: string, refreshToken: string) => {
 export const clearAuthTokens = () => {
   Cookies.remove(ACCESS_TOKEN_COOKIE);
   Cookies.remove(REFRESH_TOKEN_COOKIE);
+  Cookies.remove("email_verified"); // Clear email verification status
 };
 
 export const getAccessToken = () => {
