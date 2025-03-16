@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -348,116 +348,95 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Profile Information</CardTitle>
+                  <CardDescription>View your account details</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...profileForm}>
-                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
-                      <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
-                        <div className="w-full md:w-1/4">
-                          <div className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 mb-2">
-                            {user?.image ? (
-                              <Image
-                                src={user.image}
-                                alt="Profile picture"
-                                fill
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                No Image
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Profile image updates are available in account settings
-                          </div>
-                        </div>
-
-                        <div className="w-full md:w-3/4 space-y-4">
-                          <FormField
-                            control={profileForm.control}
-                            name="name"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Name</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                  <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+                    <div className="w-full md:w-1/4">
+                      <div className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 mb-2">
+                        {user?.image ? (
+                          <Image
+                            src={user.image}
+                            alt="Profile picture"
+                            fill
+                            className="object-cover"
                           />
-
-                          <div className="space-y-1">
-                            <Label>Email Address</Label>
-                            <div className="flex items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-                              <span className="text-muted-foreground">
-                                {user?.email || "No email set"}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => user?.email && copyToClipboard(user.email, "Email")}
-                                disabled={!user?.email}
-                              >
-                                <ClipboardCopy className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <p className="text-sm text-muted-foreground flex items-center mt-1">
-                              {user?.emailVerified ? (
-                                <>
-                                  <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
-                                  <span className="text-green-600">Verified</span>
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="h-4 w-4 text-yellow-500 mr-1" />
-                                  <span className="text-yellow-600">Not verified</span>
-                                </>
-                              )}
-                            </p>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            No Image
                           </div>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Profile image updates are available in account settings
+                      </div>
+                    </div>
 
-                          <div className="space-y-1">
-                            <Label>Account Type</Label>
-                            <div className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-                              <span className="text-muted-foreground capitalize">
-                                {user?.role?.toLowerCase() || "Standard User"}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label>KYC Status</Label>
-                            <div className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-                              <span className={`capitalize ${user?.kycStatus === "APPROVED"
-                                ? "text-green-600"
-                                : user?.kycStatus === "REJECTED"
-                                  ? "text-red-600"
-                                  : "text-yellow-600"
-                                }`}>
-                                {user?.kycStatus?.toLowerCase() || "Pending"}
-                              </span>
-                            </div>
-                          </div>
+                    <div className="w-full md:w-3/4 space-y-4">
+                      <div className="space-y-1">
+                        <Label>Name</Label>
+                        <div className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                          <span className="text-muted-foreground">
+                            {user?.name || "No name set"}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex justify-end">
-                        <Button type="submit" disabled={profileLoading}>
-                          {profileLoading ? (
+                      <div className="space-y-1">
+                        <Label>Email Address</Label>
+                        <div className="flex items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                          <span className="text-muted-foreground">
+                            {user?.email || "No email set"}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => user?.email && copyToClipboard(user.email, "Email")}
+                            disabled={!user?.email}
+                          >
+                            <ClipboardCopy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground flex items-center mt-1">
+                          {user?.emailVerified ? (
                             <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Saving...
+                              <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                              <span className="text-green-600">Verified</span>
                             </>
                           ) : (
-                            "Save Changes"
+                            <>
+                              <XCircle className="h-4 w-4 text-yellow-500 mr-1" />
+                              <span className="text-yellow-600">Not verified</span>
+                            </>
                           )}
-                        </Button>
+                        </p>
                       </div>
-                    </form>
-                  </Form>
+
+                      <div className="space-y-1">
+                        <Label>Account Type</Label>
+                        <div className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                          <span className="text-muted-foreground capitalize">
+                            {user?.role?.toLowerCase() || "Standard User"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label>KYC Status</Label>
+                        <div className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                          <span className={`capitalize ${user?.kycStatus === "APPROVED"
+                            ? "text-green-600"
+                            : user?.kycStatus === "REJECTED"
+                              ? "text-red-600"
+                              : "text-yellow-600"
+                            }`}>
+                            {user?.kycStatus?.toLowerCase() || "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -466,7 +445,7 @@ export default function ProfilePage() {
             <TabsContent value="security">
               <Card>
                 <CardHeader>
-                  <CardTitle>Password</CardTitle>
+                  <CardTitle>Change Password</CardTitle>
                   <CardDescription>
                     Update your password to keep your account secure
                   </CardDescription>
