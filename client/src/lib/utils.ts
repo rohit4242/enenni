@@ -121,7 +121,7 @@ export const getBaseUrl = () => {
   return `http://localhost:${process.env.PORT ?? 3000}`; // dev SSR should use localhost
 };
 
-export const getCallbackUrl = (defaultPath = "/dashboard") => {
+export const getCallbackUrl = (defaultPath = "/") => {
   if (typeof window === "undefined") return defaultPath;
   
   const params = new URLSearchParams(window.location.search);

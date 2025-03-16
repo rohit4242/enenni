@@ -11,7 +11,7 @@ import NavButton from "./NavButton";
 
 const navLinks = [
   {
-    href: "/dashboard",
+    href: "/",
     label: "Dashboard",
   },
   {

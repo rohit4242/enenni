@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CryptoExchangeForm } from "@/app/(dashboard)/dashboard/_components/CryptoExchangeForm";
-import { BuySellForm } from "@/app/(dashboard)/dashboard/_components/BuySellForm";
 import { ClientOnly } from "@/components/ClientOnly";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BuySellCard } from "@/components/dashboard/BuySellCard";
+import { CryptoExchangeForm } from "@/components/CryptoExchangeForm";
 
-// Separate content component to handle client-side rendering
 function ExchangeCardContent() {
   const [activeTab, setActiveTab] = useState("buySell");
   
@@ -19,7 +18,7 @@ function ExchangeCardContent() {
         <CardTitle>Trade Options</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="buySell" onValueChange={setActiveTab}>
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="buySell">Buy/Sell</TabsTrigger>
             <TabsTrigger value="swap">Swap</TabsTrigger>
@@ -30,7 +29,7 @@ function ExchangeCardContent() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              <BuySellForm />
+              <BuySellCard />
             </motion.div>
           </TabsContent>
           <TabsContent value="swap" asChild>

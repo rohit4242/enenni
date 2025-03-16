@@ -184,7 +184,7 @@ export default function KYCPage() {
     }
 
     if (user?.kycStatus === "APPROVED") {
-      router.push("/dashboard");
+      router.push("/");
       return;
     }
   }, [user, isLoading, router]);

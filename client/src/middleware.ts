@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const protectedRoutes = [
-  "/dashboard",
+  "/",  // Root is now protected
   "/orders",
   "/settings",
   "/balances",
@@ -9,7 +9,6 @@ const protectedRoutes = [
 ];
 
 const publicRoutes = [
-  "/",
   "/auth/login",
   "/auth/register",
   "/auth/new-password",
@@ -43,9 +42,9 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login", req.nextUrl));
   }
 
-  // For public routes, redirect to dashboard if already logged in
+  // For public routes, redirect to home (dashboard) if already logged in
   if (isPublicRoute && accessToken) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+    return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
   // For all other routes, proceed normally

@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { LoginSchema } from "@/lib/schemas";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   Form,
@@ -34,8 +35,8 @@ const LoginForm = () => {
   const [isPending, startTransition] = useTransition();
   const [selectedTab, setSelectedTab] = useState<string>("Entity");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get("callbackUrl");
   const urlError =
     searchParams?.get("error") === "OAuthAccountNotLinked"
       ? "Email already in use with different Provider!"
@@ -77,7 +78,8 @@ const LoginForm = () => {
           if (!data?.error && !data?.mfaRequired) {
             form.reset();
             setSuccess("Logged in successfully!");
-            router.push('/dashboard');
+            queryClient.invalidateQueries({ queryKey: ["authUser"] });
+            router.push('/');
           }
         })
         .catch((error) => {

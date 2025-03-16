@@ -12,11 +12,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loginSchema } from "@/lib/validations/auth";
 import { loginUser, verifyTwoFactor } from "@/lib/api/auth";
+import { useQueryClient } from "@tanstack/react-query";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showTwoFactor, setShowTwoFactor] = useState(false);
@@ -48,7 +50,9 @@ export default function LoginPage() {
         } else {
           // Successful login without 2FA
           console.log("Login successful, redirecting to dashboard");
-          router.push("/dashboard");
+          // Invalidate the auth query to refresh user data
+          queryClient.invalidateQueries({ queryKey: ["authUser"] });
+          router.push("/");
           router.refresh();
         }
       }
@@ -70,7 +74,10 @@ export default function LoginPage() {
     try {
       await verifyTwoFactor({ email, code });
       console.log("Login successful, redirecting to dashboard");
-      router.push("/dashboard");
+      // Invalidate the auth query to refresh user data
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      router.push("/");
+      router.refresh();
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid verification code");
     } finally {

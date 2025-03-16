@@ -53,7 +53,7 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     if (user?.emailVerified) {
-      router.push("/dashboard");
+      router.push("/");
     }
   }, [user?.emailVerified, router]);
 
@@ -179,7 +179,7 @@ export default function VerifyEmailPage() {
             </CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button className="w-full bg-teal-500 text-white hover:bg-teal-600" onClick={() => router.push("/dashboard")}>
+            <Button className="w-full bg-teal-500 text-white hover:bg-teal-600" onClick={() => router.push("/")}>
               Continue to Dashboard
             </Button>
           </CardFooter>

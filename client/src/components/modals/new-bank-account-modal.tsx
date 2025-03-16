@@ -4,8 +4,16 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNewBankAccountModal } from "@/hooks/use-new-bank-account";
-import { NewBankAccountFormValues, newBankAccountSchema } from "@/lib/schemas/bank-account";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  NewBankAccountFormValues,
+  newBankAccountSchema,
+} from "@/lib/schemas/bank-account";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -32,12 +40,9 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { createBankAccount } from "@/lib/api/external-bank-accounts";
 import { useAuthContext } from "@/context/AuthContext";
 
-
-const COUNTRIES = [
+const FIAT_CURRENCIES = [
   { id: "AED", name: "United Arab Emirates" },
   { id: "USD", name: "United States" },
-
-  // Add more countries as needed
 ];
 
 export function NewBankAccountModal() {
@@ -55,7 +60,7 @@ export function NewBankAccountModal() {
       bankName: "",
       bankAddress: "",
       bankCountry: "",
-      accountCurrency: "AED",
+      accountCurrency: "USD",
       proofDocumentUrl: "",
       iban: "",
       verifyIban: "",
@@ -76,18 +81,23 @@ export function NewBankAccountModal() {
         return;
       }
 
-      if (values.accountType === "ACCOUNT_NUMBER" &&
-        values.accountNumber !== values.verifyAccountNumber) {
+      if (
+        values.accountType === "ACCOUNT_NUMBER" &&
+        values.accountNumber !== values.verifyAccountNumber
+      ) {
         form.setError("verifyAccountNumber", {
-          message: "Account numbers do not match"
+          message: "Account numbers do not match",
         });
         return;
       }
 
       // Make sure iban is a string, not undefined
-      const ibanValue = values.accountType === "IBAN" ? (values.iban || "") : "";
+      const ibanValue = values.accountType === "IBAN" ? values.iban || "" : "";
       // Make sure accountNumber is a string, not undefined
-      const accountNumberValue = values.accountType === "ACCOUNT_NUMBER" ? (values.accountNumber || "") : "";
+      const accountNumberValue =
+        values.accountType === "ACCOUNT_NUMBER"
+          ? values.accountNumber || ""
+          : "";
 
       // Use the actual uploaded URL or empty string, not a hardcoded value
       const proofUrl = uploadedUrl || "";
@@ -121,7 +131,8 @@ export function NewBankAccountModal() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add bank account",
+        description:
+          error instanceof Error ? error.message : "Failed to add bank account",
         variant: "destructive",
       });
     } finally {
@@ -137,7 +148,10 @@ export function NewBankAccountModal() {
             <DialogTitle>Add New Bank Account</DialogTitle>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-2">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4 px-2"
+            >
               <FormField
                 control={form.control}
                 name="accountHolderName"
@@ -284,7 +298,6 @@ export function NewBankAccountModal() {
                 )}
               />
 
-
               <FormField
                 control={form.control}
                 name="bankCountry"
@@ -302,13 +315,44 @@ export function NewBankAccountModal() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {COUNTRIES.map((country) => (
+                        {FIAT_CURRENCIES.map((country) => (
                           <SelectItem key={country.id} value={country.id}>
                             {country.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="accountCurrency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Account currency</FormLabel>
+                    <FormControl>
+                      <Select
+                        disabled={loading}
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {FIAT_CURRENCIES.map((currency) => (
+                            <SelectItem key={currency.id} value={currency.id}>
+                              {currency.id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
