@@ -5,7 +5,8 @@ import {
   passwordResetTemplate,
   passwordResetSuccessTemplate,
   twoFactorEnabledTemplate,
-  twoFactorDisabledTemplate
+  twoFactorDisabledTemplate,
+  loginVerificationTemplate
 } from '../utils/emailTemplates';
 
 // Initialize Resend
@@ -145,4 +146,32 @@ export const sendTwoFactorDisabledEmail = async (
     console.error('Failed to send two-factor disabled email:', error);
     // We're catching the error but not rethrowing
   }
-}; 
+};
+
+/**
+ * Send login verification code
+ */
+export const sendLoginVerificationEmail = async (
+  email: string,
+  code: string
+): Promise<void> => {
+  const { subject, text, html } = loginVerificationTemplate(
+    code,
+    config.email.brandColor
+  );
+  
+  try {
+    console.log('Sending login verification email to:', email);
+    const result = await resend.emails.send({
+      from: `${config.email.fromName}@${config.email.fromEmail}`,
+      to: email,
+      subject,
+      text,
+      html,
+    });
+    console.log('Login verification email sent:', result);
+  } catch (error) {
+    console.error('Failed to send login verification email:', error);
+    // We're catching the error but not rethrowing
+  }
+};

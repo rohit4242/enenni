@@ -48,18 +48,45 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await registerUser({ 
+      const response = await registerUser({ 
         name: values.name, 
         email: values.email, 
         password: values.password,
         isEntity: values.accountType === "entity"
       });
+      
+      // Check if there's an error from the API call
+      if (response.status === 'error') {
+        // Highlight the email field if it's a conflict error (email already exists)
+        if (response.code === 'CONFLICT_ERROR') {
+          form.setError('email', { 
+            type: 'manual', 
+            message: 'This email is already registered' 
+          });
+        }
+        
+        setError(response.error);
+        setIsLoading(false);
+        return;
+      }
+      
       setSuccess(true);
       setTimeout(() => {
         router.push("/auth/verify-email");
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed. Please try again.");
+      console.error("Registration error:", err);
+      
+      // Try to extract the specific error message for email conflicts
+      if (err.response?.data?.error?.code === 'CONFLICT_ERROR') {
+        form.setError('email', { 
+          type: 'manual', 
+          message: 'This email is already registered' 
+        });
+        setError(err.response.data.error.message);
+      } else {
+        setError(err.response?.data?.error?.message || err.response?.data?.message || "Registration failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -73,8 +100,13 @@ export default function RegisterPage() {
       </div>
 
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+        <Alert variant="destructive" className="border border-destructive/30">
+          <AlertDescription className="font-medium flex items-center gap-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            {error}
+          </AlertDescription>
         </Alert>
       )}
 

@@ -4,6 +4,7 @@ import { generateTokenPair, jwtVerify } from "../utils/jwt";
 import {
   generatePasswordResetToken,
   generateVerificationToken,
+  generateTwoFactorToken,
 } from "../utils/token";
 import {
   AuthenticationError,
@@ -19,6 +20,8 @@ import type {
   VerifyEmailInput,
   TwoFactorInput,
   RefreshTokenInput,
+  LoginVerificationInput,
+  VerifyLoginCodeInput,
 } from "../schemas/auth.schema";
 import { CryptoType, type User } from "@prisma/client";
 import * as emailService from "./email.service";
@@ -70,12 +73,15 @@ export const register = async (
   await initializeUserBalances(user.id);
 
   // Generate JWT tokens
-  const { accessToken, refreshToken } = await generateTokenPair({ userId: user.id, email: user.email! });
-  
+  const { accessToken, refreshToken } = await generateTokenPair({
+    userId: user.id,
+    email: user.email!,
+  });
+
   // Store refresh token in database
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
-  
+
   await prisma.refreshToken.create({
     data: {
       token: refreshToken,
@@ -83,7 +89,7 @@ export const register = async (
       expires: expiresAt,
     },
   });
-  
+
   return { user, accessToken, refreshToken };
 };
 
@@ -145,12 +151,15 @@ export const login = async (
   }
 
   // Generate JWT tokens
-  const { accessToken, refreshToken } = await generateTokenPair({ userId: user.id, email: user.email! });
-  
+  const { accessToken, refreshToken } = await generateTokenPair({
+    userId: user.id,
+    email: user.email!,
+  });
+
   // Store refresh token in database
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
-  
+
   await prisma.refreshToken.create({
     data: {
       token: refreshToken,
@@ -324,12 +333,15 @@ export const verifyTwoFactorToken = async (
   });
 
   // Generate JWT tokens
-  const { accessToken, refreshToken } = await generateTokenPair({ userId: user.id, email: user.email! });
-  
+  const { accessToken, refreshToken } = await generateTokenPair({
+    userId: user.id,
+    email: user.email!,
+  });
+
   // Store refresh token in database
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
-  
+
   await prisma.refreshToken.create({
     data: {
       token: refreshToken,
@@ -351,10 +363,9 @@ const initializeUserBalances = async (userId: string): Promise<void> => {
       userId,
       currency: "USD",
       balance: 0,
-    
     },
   });
-  
+
   await prisma.fiatBalance.create({
     data: {
       userId,
@@ -401,10 +412,7 @@ export const resendVerification = async (email: string): Promise<void> => {
   });
 
   // Send verification email
-  await emailService.sendVerificationEmail(
-    email,
-    verificationToken.token
-  );
+  await emailService.sendVerificationEmail(email, verificationToken.token);
 };
 
 /**
@@ -414,16 +422,16 @@ export const refreshAccessToken = async (
   data: RefreshTokenInput
 ): Promise<{ accessToken: string; refreshToken: string }> => {
   const { refreshToken } = data;
-  
+
   // Verify the refresh token
   try {
     const payload = await jwtVerify(refreshToken);
-    
+
     // Check if token is a refresh token
-    if (payload.type !== 'refresh') {
-      throw new AuthenticationError('Invalid refresh token');
+    if (payload.type !== "refresh") {
+      throw new AuthenticationError("Invalid refresh token");
     }
-    
+
     // Find the refresh token in the database
     const storedToken = await prisma.refreshToken.findFirst({
       where: {
@@ -431,42 +439,45 @@ export const refreshAccessToken = async (
         userId: payload.userId,
       },
     });
-    
+
     if (!storedToken) {
-      throw new AuthenticationError('Invalid refresh token');
+      throw new AuthenticationError("Invalid refresh token");
     }
-    
+
     // Check if token is expired
     if (new Date() > storedToken.expires) {
       // Delete the expired token
       await prisma.refreshToken.delete({
         where: { id: storedToken.id },
       });
-      
-      throw new AuthenticationError('Refresh token expired');
+
+      throw new AuthenticationError("Refresh token expired");
     }
-    
+
     // Find the user
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
     });
-    
+
     if (!user) {
-      throw new NotFoundError('User not found');
+      throw new NotFoundError("User not found");
     }
-    
+
     // Delete the old refresh token
     await prisma.refreshToken.delete({
       where: { id: storedToken.id },
     });
-    
+
     // Generate new tokens
-    const newTokens = await generateTokenPair({ userId: user.id, email: user.email! });
-    
+    const newTokens = await generateTokenPair({
+      userId: user.id,
+      email: user.email!,
+    });
+
     // Store new refresh token
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
-    
+
     await prisma.refreshToken.create({
       data: {
         token: newTokens.refreshToken,
@@ -474,29 +485,121 @@ export const refreshAccessToken = async (
         expires: expiresAt,
       },
     });
-    
+
     return newTokens;
   } catch (error) {
-    throw new AuthenticationError('Invalid refresh token');
+    throw new AuthenticationError("Invalid refresh token");
   }
 };
 
 /**
- * Logout a user by invalidating their refresh token
+ * Invalidate a refresh token
  */
-export const invalidateRefreshToken = async (refreshToken: string): Promise<void> => {
-  try {
-    const payload = await jwtVerify(refreshToken);
-    
-    // Delete the refresh token from the database
-    await prisma.refreshToken.deleteMany({
-      where: {
-        token: refreshToken,
-        userId: payload.userId,
-      },
-    });
-  } catch (error) {
-    // If token is invalid, just ignore
-    console.error('Error invalidating refresh token:', error);
+export const invalidateRefreshToken = async (
+  refreshToken: string
+): Promise<void> => {
+  await prisma.refreshToken.deleteMany({
+    where: {
+      token: refreshToken,
+    },
+  });
+};
+
+/**
+ * Send login verification code
+ */
+export const sendLoginVerificationCode = async (
+  email: string
+): Promise<void> => {
+  // Check if user exists
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  // If user doesn't exist, return silently (security best practice)
+  if (!user) {
+    console.log(`Login verification requested for non-existent user: ${email}`);
+    return;
   }
+
+  // Generate login verification token
+  const loginToken = generateTwoFactorToken(email, 10); // 10 minutes expiry
+
+  // Save the token
+  await prisma.twoFactorToken.create({
+    data: {
+      email,
+      token: loginToken.token,
+      expires: loginToken.expires,
+    },
+  });
+
+  // Send the verification code via email
+  try {
+    await emailService.sendLoginVerificationEmail(email, loginToken.token);
+    console.log(`Login verification code sent to: ${email}`);
+  } catch (error) {
+    console.error("Failed to send login verification code:", error);
+    // We're catching the error but not rethrowing to prevent revealing if the email exists
+  }
+};
+
+/**
+ * Verify login code
+ */
+export const verifyLoginCode = async (
+  data: VerifyLoginCodeInput
+): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
+  const { email, code } = data;
+
+  // Find the user
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new AuthenticationError("Invalid verification credentials");
+  }
+
+  // Find the token
+  const twoFactorToken = await prisma.twoFactorToken.findFirst({
+    where: {
+      email,
+      token: code,
+      expires: {
+        gt: new Date(),
+      },
+    },
+  });
+
+  if (!twoFactorToken) {
+    throw new AuthenticationError("Invalid or expired verification code");
+  }
+
+  // Delete the token (one-time use)
+  await prisma.twoFactorToken.delete({
+    where: {
+      id: twoFactorToken.id,
+    },
+  });
+
+  // Generate JWT tokens
+  const { accessToken, refreshToken } = await generateTokenPair({
+    userId: user.id,
+    email: user.email!,
+  });
+
+  // Store refresh token in database
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+
+  await prisma.refreshToken.create({
+    data: {
+      token: refreshToken,
+      userId: user.id,
+      expires: expiresAt,
+    },
+  });
+
+  return { user, accessToken, refreshToken };
 };

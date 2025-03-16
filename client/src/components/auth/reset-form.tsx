@@ -39,11 +39,23 @@ const ResetForm = () => {
     setSuccess("");
 
     startTransition(async () => {
-      const response = await requestPasswordReset(values.email);
-      if (response.error) {
-        setError(response.error);
-      } else {
+      try {
+        const response = await requestPasswordReset(values.email);
+        
+        if (response.status === 'error') {
+          setError(response.error);
+          return;
+        }
+        
+        if (response.error) {
+          setError(response.error);
+          return;
+        }
+        
         setSuccess("Password reset email sent");
+      } catch (err) {
+        console.error("Password reset error:", err);
+        setError("Failed to send reset email. Please try again later.");
       }
     });
     console.log(values);

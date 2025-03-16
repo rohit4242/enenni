@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const protectedRoutes = [
-  "/",  // Root is now protected
+  "/", // Root is now protected
   "/orders",
   "/settings",
   "/balances",
@@ -13,13 +13,23 @@ const publicRoutes = [
   "/auth/register",
   "/auth/new-password",
   "/auth/verify-email",
+  "/auth/login-verification",
   "/auth/reset",
   "/auth/error",
 ];
 
 // Routes that require email verification
-const verificationRequiredRoutes = [
-  "/",
+const emailVerificationRequiredRoutes = [
+  "/", // Root is now protected
+  "/orders",
+  "/settings",
+  "/balances",
+  "/wallets",
+];
+
+// Routes that require login verification
+const loginVerificationRequiredRoutes = [
+  "/", // Root is now protected
   "/orders",
   "/settings",
   "/balances",
@@ -45,26 +55,49 @@ export default async function middleware(req: NextRequest) {
     ) || path.startsWith("/auth/"); // Allow all auth paths
 
   const accessToken = req.cookies.get("access_token")?.value;
-  
-  // Check if email is verified (stored in a cookie)
+
+  // Check verification statuses from cookies
   const isEmailVerified = req.cookies.get("email_verified")?.value === "true";
-  
+  const isLoginVerified = req.cookies.get("login_verified")?.value === "true";
+
   // For protected routes, redirect to login if no token
   if (isProtectedRoute && !accessToken) {
     return NextResponse.redirect(new URL("/auth/login", req.nextUrl));
   }
-  
-  // For routes requiring verification, redirect to verification page if email not verified
-  const requiresVerification = verificationRequiredRoutes.some(
+
+  // For routes requiring email verification, redirect to verification page if email not verified
+  const requiresEmailVerification = emailVerificationRequiredRoutes.some(
     (route) => path === route || path.startsWith(`${route}/`)
   );
-  
-  if (requiresVerification && accessToken && !isEmailVerified) {
+
+  if (requiresEmailVerification && accessToken && !isEmailVerified) {
     return NextResponse.redirect(new URL("/auth/verify-email", req.nextUrl));
   }
 
-  // For public routes, redirect to home (dashboard) if already logged in and verified
-  if (isPublicRoute && accessToken && isEmailVerified && path !== "/auth/verify-email") {
+  // For routes requiring login verification, redirect to login verification page if login not verified
+  const requiresLoginVerification = loginVerificationRequiredRoutes.some(
+    (route) => path === route || path.startsWith(`${route}/`)
+  );
+
+  // Extract email from stored JWT or get from cookies
+  const email = req.cookies.get("user_email")?.value;
+
+  if (requiresLoginVerification && accessToken && !isLoginVerified) {
+    // Pass email as a query parameter to the login verification page
+    return NextResponse.redirect(
+      new URL(`/auth/login-verification?email=${email}`, req.nextUrl)
+    );
+  }
+
+  // For public routes, redirect to home (dashboard) if already logged in, verified, and not at verification pages
+  if (
+    isPublicRoute &&
+    accessToken &&
+    isEmailVerified &&
+    isLoginVerified &&
+    path !== "/auth/verify-email" &&
+    path !== "/auth/login-verification"
+  ) {
     return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 

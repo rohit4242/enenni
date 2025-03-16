@@ -60,12 +60,14 @@ const LoginForm = () => {
     startTransition(() => {
       loginUser(values)
         .then((data) => {
+          // Clear code field if there's an error
           if (data?.error) {
             form.reset({
               ...form.getValues(),
               code: ""
             });
             setError(data.error);
+            return;
           }
 
           if (data?.mfaRequired) {
@@ -110,7 +112,7 @@ const LoginForm = () => {
         })
         .catch((error) => {
           console.error("Login error:", error);
-          setError("Something went wrong");
+          setError("Something went wrong with the login process. Please try again.");
         });
     });
   };

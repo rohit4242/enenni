@@ -186,6 +186,8 @@ export const clearAuthTokens = () => {
   Cookies.remove(ACCESS_TOKEN_COOKIE);
   Cookies.remove(REFRESH_TOKEN_COOKIE);
   Cookies.remove("email_verified"); // Clear email verification status
+  Cookies.remove("login_verified"); // Clear login verification status
+  Cookies.remove("user_email"); // Clear user email
 };
 
 export const getAccessToken = () => {

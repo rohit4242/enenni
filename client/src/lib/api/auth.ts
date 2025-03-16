@@ -47,6 +47,17 @@ export const refreshAccessToken = async () => {
     return true;
   } catch (error) {
     clearTokens();
+    
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        console.error("Token refresh error:", error.response.data.error.message);
+      } else if (error.response.data.message) {
+        console.error("Token refresh error:", error.response.data.message);
+      }
+    }
+    
     return false;
   }
 };
@@ -57,39 +68,96 @@ export const registerUser = async (data: {
   password: string;
   isEntity: boolean;
 }) => {
-  const response = await apiClient.post("/auth/register", data);
+  try {
+    const response = await apiClient.post("/auth/register", data);
 
-  // Set the access token if available
-  if (response.data.data.accessToken) {
-    setAccessToken(response.data.data.accessToken);
-    setupRefreshToken(15 * 60); // 15 minutes
+    // Set the access token if available
+    if (response.data.data.accessToken) {
+      setAccessToken(response.data.data.accessToken);
+      setupRefreshToken(15 * 60); // 15 minutes
+    }
+
+    return response.data;
+  } catch (error) {
+    console.log("Registration error:", error);
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        // Check for specific conflict error (email already exists)
+        if (error.response.data.error.code === 'CONFLICT_ERROR') {
+          console.log('Email conflict detected:', error.response.data.error.message);
+        }
+        
+        return {
+          status: 'error',
+          error: error.response.data.error.message,
+          code: error.response.data.error.code
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Registration failed"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Registration failed. Please try again later."
+    };
   }
-
-  return response.data;
 };
 
 export const loginUser = async (data: { email: string; password: string }) => {
-  const response = await apiClient.post("/auth/login", data);
+  try {
+    const response = await apiClient.post("/auth/login", data);
 
-  // If two-factor auth is required, don't set the token
-  if (
-    response.data.data.user?.isTwoFactorEnabled &&
-    !response.data.data.accessToken
-  ) {
+    // If two-factor auth is required, don't set the token
+    if (
+      response.data.data.user?.isTwoFactorEnabled &&
+      !response.data.data.accessToken
+    ) {
+      return response.data;
+    }
+
+    // Set the access token if available
+    if (response.data.data.accessToken) {
+      setAccessToken(response.data.data.accessToken);
+      setAuthTokens(
+        response.data.data.accessToken,
+        response.data.data.refreshToken
+      );
+      setupRefreshToken(15 * 60); // 15 minutes
+    }
+
     return response.data;
+  } catch (error) {
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Invalid credentials"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Authentication failed. Please check your credentials and try again."
+    };
   }
-
-  // Set the access token if available
-  if (response.data.data.accessToken) {
-    setAccessToken(response.data.data.accessToken);
-    setAuthTokens(
-      response.data.data.accessToken,
-      response.data.data.refreshToken
-    );
-    setupRefreshToken(15 * 60); // 15 minutes
-  }
-
-  return response.data;
 };
 
 export const logoutUser = async () => {
@@ -100,7 +168,28 @@ export const logoutUser = async () => {
     return response.data;
   } catch (error) {
     clearTokens();
-    throw error;
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Logout failed"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Logout failed. Please try again."
+    };
   }
 };
 
@@ -114,52 +203,292 @@ export const getCurrentUser = async () => {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
         // Retry the request with the new token
-        const response = await apiClient.get("/auth/me");
-        return response.data;
+        try {
+          const response = await apiClient.get("/auth/me");
+          return response.data;
+        } catch (retryError) {
+          // Handle retry error
+          if (retryError instanceof AxiosError && retryError.response?.data) {
+            // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+            if (retryError.response.data.error && retryError.response.data.error.message) {
+              return {
+                status: 'error',
+                error: retryError.response.data.error.message
+              };
+            }
+            
+            // Handle other response formats
+            return {
+              status: 'error',
+              error: retryError.response.data.message || retryError.response.data.error || "Authentication failed"
+            };
+          }
+        }
       }
     }
-    throw error;
+    
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Failed to get user information"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Failed to get user information. Please try again."
+    };
   }
 };
 
 export const verifyEmail = async (code: string, email: string) => {
-  const response = await apiClient.post("/auth/verify-email", { code, email });
-  return response.data;
+  try {
+    const response = await apiClient.post("/auth/verify-email", { code, email });
+    return response.data;
+  } catch (error) {
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Verification failed"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Email verification failed. Please try again."
+    };
+  }
 };
 
 export const requestPasswordReset = async (email: string) => {
-  const response = await apiClient.post("/auth/reset-password", { email });
-  return response.data;
+  try {
+    const response = await apiClient.post("/auth/reset-password", { email });
+    return response.data;
+  } catch (error) {
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Password reset failed"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Unable to reset password. Please try again later."
+    };
+  }
 };
 
 export const resetPassword = async (data: {
   token: string;
   password: string;
 }) => {
-  const response = await apiClient.post("/auth/new-password", data);
-  return response.data;
+  try {
+    const response = await apiClient.post("/auth/new-password", data);
+    return response.data;
+  } catch (error) {
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Password reset failed"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Unable to reset password. The link may have expired."
+    };
+  }
 };
 
 export const verifyTwoFactor = async (data: {
   email: string;
   code: string;
 }) => {
-  const response = await apiClient.post("/auth/two-factor", data);
+  try {
+    const response = await apiClient.post("/auth/two-factor", data);
 
-  // Set the access token if available
-  if (response.data.data?.accessToken) {
-    setAccessToken(response.data.data.accessToken);
-    setAuthTokens(
-      response.data.data.accessToken,
-      response.data.data.refreshToken
-    );
-    setupRefreshToken(15 * 60); // 15 minutes
+    // Set the access token if available
+    if (response.data.data?.accessToken) {
+      setAccessToken(response.data.data.accessToken);
+      setAuthTokens(
+        response.data.data.accessToken,
+        response.data.data.refreshToken
+      );
+      setupRefreshToken(15 * 60); // 15 minutes
+    }
+
+    return response.data;
+  } catch (error) {
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Invalid verification code"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Two-factor authentication failed. Please try again."
+    };
   }
-
-  return response.data;
 };
 
 export const resendVerificationEmail = async (email: string) => {
-  const response = await apiClient.post("/auth/resend-verification", { email });
-  return response.data;
+  try {
+    const response = await apiClient.post("/auth/resend-verification", { email });
+    return response.data;
+  } catch (error) {
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Unable to resend verification"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Unable to resend verification email. Please try again later."
+    };
+  }
+};
+
+export const sendLoginVerificationCode = async (email: string) => {
+  try {
+    const response = await apiClient.post("/auth/send-login-verification", { email });
+    return response.data;
+  } catch (error) {
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Failed to send verification code"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Failed to send verification code. Please try again."
+    };
+  }
+};
+
+export const verifyLoginCode = async (data: {
+  email: string;
+  code: string;
+}) => {
+  try {
+    const response = await apiClient.post("/auth/verify-login-code", data);
+
+    // Set the access token if available
+    if (response.data.data?.accessToken) {
+      setAccessToken(response.data.data.accessToken);
+      setAuthTokens(
+        response.data.data.accessToken,
+        response.data.data.refreshToken
+      );
+      setupRefreshToken(15 * 60); // 15 minutes
+    }
+
+    return response.data;
+  } catch (error) {
+    // Handle API errors and extract the error message from the server response
+    if (error instanceof AxiosError && error.response?.data) {
+      // Format from server: { success: false, error: { code: 'XXX', message: 'XXX' } }
+      if (error.response.data.error && error.response.data.error.message) {
+        return {
+          status: 'error',
+          error: error.response.data.error.message
+        };
+      }
+      
+      // Handle other response formats
+      return {
+        status: 'error',
+        error: error.response.data.message || error.response.data.error || "Invalid verification code"
+      };
+    }
+    
+    // If no specific error message, provide a generic one
+    return {
+      status: 'error',
+      error: "Login verification failed. Please try again."
+    };
+  }
 };

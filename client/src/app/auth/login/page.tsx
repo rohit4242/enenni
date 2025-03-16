@@ -24,6 +24,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [email, setEmail] = useState("");
+  const [twoFactorEmail, setTwoFactorEmail] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -38,61 +40,29 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { data, message } = await loginUser({ email: values.email, password: values.password });
+      const response = await loginUser({
+        email: values.email,
+        password: values.password,
+      });
 
-      if (data.user.isTwoFactorEnabled) {
-        setEmail(values.email);
-        setShowTwoFactor(true);
-      } else {
-        // Check if email is verified
-        console.log("data.user.emailVerified", data.user.emailVerified);
-        
-        // Set email_verified cookie based on verification status
-        if (data.user.emailVerified) {
-          Cookies.set("email_verified", "true", {
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            expires: 30 // 30 days
-          });
-        } else {
-          Cookies.set("email_verified", "false", {
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            expires: 30 // 30 days
-          });
-        }
-        
-        if (data.user.emailVerified == null) {
-          router.push("/auth/verify-email");
-        } else {
-          // Successful login without 2FA
-          console.log("Login successful, redirecting to dashboard");
-          // Invalidate the auth query to refresh user data
-          queryClient.invalidateQueries({ queryKey: ["authUser"] });
-          router.push("/");
-          router.refresh();
-        }
+      if (response.status === "error") {
+        setError(response.error);
+        setIsLoading(false);
+        return;
       }
-    } catch (err: any) {
-      console.error("Login submission error:", err);
-      setError(err.response?.data?.message || "Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleTwoFactorSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    const code = (e.currentTarget.elements.namedItem("code") as HTMLInputElement).value;
-
-    try {
-      const response = await verifyTwoFactor({ email, code });
-      console.log("Login successful, redirecting to dashboard");
+      // Handle two-factor authentication
+      if (
+        response.data.user?.isTwoFactorEnabled &&
+        !response.data.accessToken
+      ) {
+        setTwoFactorEmail(values.email);
+        setShowTwoFactor(true);
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Login successful, redirecting to verification");
       
       // Set email_verified cookie based on verification status
       if (response.data.user.emailVerified) {
@@ -111,17 +81,106 @@ export default function LoginPage() {
         });
       }
       
+      // Store user email in a cookie for middleware to use
+      Cookies.set("user_email", values.email, {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 30 // 30 days
+      });
+      
+      // Reset login_verified cookie to ensure verification happens
+      Cookies.set("login_verified", "false", {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 1 // 1 day
+      });
+      
+      // Invalidate the auth query to refresh user data
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      
+      if (!response.data.user.emailVerified) {
+        // If email not verified, redirect to email verification
+        router.push("/auth/verify-email");
+      } else {
+        // If email verified, redirect to login verification
+        router.push(`/auth/login-verification?email=${values.email}`);
+      }
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(
+        err.message || "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTwoFactorSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await verifyTwoFactor({
+        email: twoFactorEmail,
+        code: twoFactorCode,
+      });
+
+      if (response.status === "error") {
+        setError(response.error);
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Login successful, redirecting to verification");
+      
+      // Set email_verified cookie based on verification status
+      if (response.data.user.emailVerified) {
+        Cookies.set("email_verified", "true", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+      } else {
+        Cookies.set("email_verified", "false", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+      }
+      
+      // Store user email in a cookie for middleware to use
+      Cookies.set("user_email", twoFactorEmail, {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 30 // 30 days
+      });
+      
+      // Reset login_verified cookie to ensure verification happens
+      Cookies.set("login_verified", "false", {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 1 // 1 day
+      });
+      
       // Invalidate the auth query to refresh user data
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
       
       if (!response.data.user.emailVerified) {
         router.push("/auth/verify-email");
       } else {
-        router.push("/");
-        router.refresh();
+        // Redirect to login verification after 2FA
+        router.push(`/auth/login-verification?email=${twoFactorEmail}`);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid verification code");
+      console.error("Two-factor verification error:", err);
+      setError(err.response?.data?.error?.message || err.response?.data?.message || "Invalid verification code. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -136,8 +195,13 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="border border-destructive/30">
+            <AlertDescription className="font-medium flex items-center gap-x-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              {error}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -170,8 +234,13 @@ export default function LoginPage() {
       </div>
 
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+        <Alert variant="destructive" className="border border-destructive/30">
+          <AlertDescription className="font-medium flex items-center gap-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            {error}
+          </AlertDescription>
         </Alert>
       )}
 

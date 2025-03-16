@@ -43,6 +43,15 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string(),
 });
 
+export const loginVerificationSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+export const verifyLoginCodeSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  code: z.string().length(6, 'Verification code must be 6 digits'),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
@@ -51,4 +60,6 @@ export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type TwoFactorInput = z.infer<typeof twoFactorSchema>;
 export type VerifyTotpInput = z.infer<typeof verifyTotpSchema>;
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
-export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>; 
+export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+export type LoginVerificationInput = z.infer<typeof loginVerificationSchema>;
+export type VerifyLoginCodeInput = z.infer<typeof verifyLoginCodeSchema>; 

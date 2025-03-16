@@ -297,7 +297,7 @@ export const me = async (c: Context) => {
 };
 
 /**
- * Handle resend verification
+ * Handle resend verification email
  */
 export const handleResendVerification = async (c: Context) => {
   const data = await c.req.json();
@@ -305,6 +305,57 @@ export const handleResendVerification = async (c: Context) => {
 
   return c.json({
     status: 'success',
-    message: 'If your email is registered, a new verification link has been sent'
+    message: 'If your email is registered, a new verification email has been sent'
+  }, 200);
+};
+
+/**
+ * Send login verification code
+ */
+export const sendLoginVerificationCode = async (c: Context) => {
+  const data = await c.req.json();
+  await authService.sendLoginVerificationCode(data.email);
+
+  return c.json({
+    status: 'success',
+    message: 'If your email is registered, a verification code has been sent'
+  }, 200);
+};
+
+/**
+ * Verify login code
+ */
+export const verifyLoginCode = async (c: Context) => {
+  const data = await c.req.json();
+  const { user, accessToken, refreshToken } = await authService.verifyLoginCode(data);
+
+  // Set cookies
+  setCookie(c, "access_token", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 15 * 60, // 15 minutes
+  });
+  
+  setCookie(c, "refresh_token", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60, // 7 days
+  });
+
+  // Remove password from response
+  const { password, ...userWithoutPassword } = user;
+
+  return c.json({
+    status: 'success',
+    message: 'Login verification successful',
+    data: {
+      user: userWithoutPassword,
+      accessToken,
+      refreshToken
+    }
   }, 200);
 }; 

@@ -34,4 +34,8 @@ export const newPasswordSchema = z.object({
 
 export const twoFactorSchema = z.object({
   code: z.string().length(6, { message: "Code must be 6 digits" }),
+});
+
+export const loginVerificationSchema = z.object({
+  code: z.string().length(6, { message: "Verification code must be 6 digits" }),
 }); 

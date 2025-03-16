@@ -44,15 +44,27 @@ const NewPasswordForm = () => {
     setSuccess("");
 
     startTransition(async () => {
-     const response = await resetPassword({
-      token: token || "",
-      password: values.password,
-     });
-     if (response.error) {
-      setError(response.error);
-     } else {
-      setSuccess("Password reset successfully");
-     }
+      try {
+        const response = await resetPassword({
+          token: token || "",
+          password: values.password,
+        });
+        
+        if (response.status === 'error') {
+          setError(response.error);
+          return;
+        }
+        
+        if (response.error) {
+          setError(response.error);
+          return;
+        }
+        
+        setSuccess("Password reset successfully");
+      } catch (err) {
+        console.error("Password reset error:", err);
+        setError("Failed to reset password. Please try again later.");
+      }
     });
   };
 

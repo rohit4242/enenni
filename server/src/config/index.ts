@@ -16,7 +16,7 @@ export const config = {
   },
   email: {
     resendApiKey: process.env.RESEND_API_KEY || '',
-    fromEmail: process.env.FROM_EMAIL || '<onboarding@resend.dev>',
+    fromEmail: process.env.FROM_EMAIL || 'onboarding@resend.dev',
     fromName: process.env.FROM_NAME || 'Enenni',
     brandColor: process.env.BRAND_COLOR || '#2563EB',
   },

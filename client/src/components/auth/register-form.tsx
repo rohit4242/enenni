@@ -53,12 +53,41 @@ const RegisterForm = () => {
         password: values.password,
         isEntity: selectedTab === "Entity",
       }).then((data) => {
-        setError(data.error);
-        setSuccess(data.success);
+        if (data.status === 'error') {
+          // Highlight the email field if it's a conflict error (email already exists)
+          if (data.code === 'CONFLICT_ERROR') {
+            form.setError('email', { 
+              type: 'manual', 
+              message: 'This email is already registered' 
+            });
+          }
+          
+          setError(data.error);
+          return;
+        }
+        
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+        
         if (data.success) {
           console.log("Account created successfully", data.success);
           router.push("/auth/login");
           setSuccess("Account created successfully");
+        }
+      }).catch((error) => {
+        console.error("Registration error:", error);
+        
+        // Try to extract the specific error message for email conflicts
+        if (error.response?.data?.error?.code === 'CONFLICT_ERROR') {
+          form.setError('email', { 
+            type: 'manual', 
+            message: 'This email is already registered' 
+          });
+          setError(error.response.data.error.message);
+        } else {
+          setError("An unexpected error occurred. Please try again.");
         }
       });
     });
