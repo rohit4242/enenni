@@ -244,7 +244,9 @@ export const resetPassword = async (
 
   if (!user) {
     // We don't want to reveal if the email exists or not for security reasons
-    return;
+    throw new NotFoundError(
+      "No account found with this email address. Please check your email or register for a new account."
+    );
   }
 
   // Generate password reset token
