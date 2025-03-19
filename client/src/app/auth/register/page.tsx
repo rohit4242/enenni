@@ -85,13 +85,22 @@ export default function RegisterPage() {
         path: "/",
         expires: 30 // 30 days
       });
+      
+      // Set pending_email_verification flag to ensure middleware allows access
+      Cookies.set("pending_email_verification", "true", {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 1 // 1 day
+      });
 
       setSuccess(true);
       
-      // Redirect to email verification page after a short delay
+      // Use a stronger redirect method after registration to ensure it works in all environments
       setTimeout(() => {
-        router.push("/auth/verify-email");
-      }, 2000);
+        // Force a hard navigation instead of client-side routing
+        window.location.href = `/auth/verify-email?email=${encodeURIComponent(values.email)}`;
+      }, 1500);
     } catch (err: any) {
       console.error("Registration error:", err);
       

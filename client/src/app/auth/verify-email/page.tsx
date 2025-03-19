@@ -74,11 +74,33 @@ export default function VerifyEmailPage() {
   const [showManualEmail, setShowManualEmail] = useState(false);
 
   useEffect(() => {
+    // If already verified, redirect to home
     if (user?.emailVerified) {
       router.push("/");
     }
-    refetch();
+    
+    // Don't call refetch in the dependency array to prevent loops
   }, [user?.emailVerified, router]);
+  
+  // Separate effect for initial data loading
+  useEffect(() => {
+    // Attempt to load user data
+    refetch();
+    
+    // If the code is in URL, prepare to auto-submit
+    if (code && code.length === 6) {
+      const isValid = /^\d{6}$/.test(code);
+      if (isValid) {
+        // Auto-populate form with code from URL
+        form.setValue("digit1", code[0]);
+        form.setValue("digit2", code[1]);
+        form.setValue("digit3", code[2]);
+        form.setValue("digit4", code[3]);
+        form.setValue("digit5", code[4]);
+        form.setValue("digit6", code[5]);
+      }
+    }
+  }, []);
 
   // Initialize form with default values
   const form = useForm<VerificationFormValues>({
@@ -213,6 +235,9 @@ export default function VerifyEmailPage() {
           path: "/",
           expires: 30, // 30 days
         });
+        
+        // Clear pending email verification flag since verification is complete
+        Cookies.remove("pending_email_verification");
 
         // Add a client-side cookie to explicitly prevent redirect to login-verification
         Cookies.set("first_login_after_verification", "true", {
