@@ -20,6 +20,7 @@ export const LogoutButton = ({ children }: LogoutButtonProps) => {
     Cookies.remove("email_verified");
     Cookies.remove("login_verified");
     Cookies.remove("user_email");
+    Cookies.remove("auth_stage");
     
     router.replace("/auth/login");
     router.refresh();

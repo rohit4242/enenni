@@ -254,6 +254,14 @@ export const getCurrentUser = async () => {
 
 export const verifyEmail = async (code: string, email: string) => {
   try {
+    // Validate email before sending
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return {
+        status: 'error',
+        error: "Invalid email address. Please log in again."
+      };
+    }
+
     const response = await apiClient.post("/auth/verify-email", { code, email });
     return response.data;
   } catch (error) {
@@ -391,6 +399,14 @@ export const verifyTwoFactor = async (data: {
 
 export const resendVerificationEmail = async (email: string) => {
   try {
+    // Validate email before sending
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return {
+        status: 'error',
+        error: "Invalid email address. Please log in again."
+      };
+    }
+
     const response = await apiClient.post("/auth/resend-verification", { email });
     return response.data;
   } catch (error) {
@@ -421,6 +437,14 @@ export const resendVerificationEmail = async (email: string) => {
 
 export const sendLoginVerificationCode = async (email: string) => {
   try {
+    // Validate email before sending
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return {
+        status: 'error',
+        error: "Invalid email address. Please log in again."
+      };
+    }
+
     const response = await apiClient.post("/auth/send-login-verification", { email });
     return response.data;
   } catch (error) {
@@ -454,6 +478,22 @@ export const verifyLoginCode = async (data: {
   code: string;
 }) => {
   try {
+    // Validate email before sending
+    if (!data.email || typeof data.email !== 'string' || !data.email.includes('@')) {
+      return {
+        status: 'error',
+        error: "Invalid email address. Please log in again."
+      };
+    }
+
+    // Validate code before sending
+    if (!data.code || typeof data.code !== 'string' || data.code.length !== 6) {
+      return {
+        status: 'error',
+        error: "Invalid verification code. Code must be 6 digits."
+      };
+    }
+
     const response = await apiClient.post("/auth/verify-login-code", data);
 
     // Set the access token if available

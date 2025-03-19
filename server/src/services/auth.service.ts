@@ -39,7 +39,9 @@ export const register = async (
   });
 
   if (existingUser) {
-    throw new ConflictError("User with this email already exists");
+    throw new ConflictError(
+      "An account with this email already exists. Please use a different email or login to your existing account."
+    );
   }
 
   // Hash the password
@@ -107,15 +109,23 @@ export const login = async (
     },
   });
 
-  if (!user || !user.password) {
-    throw new AuthenticationError("Invalid credentials");
+  if (!user) {
+    throw new NotFoundError("No account found with this email address. Please check your email or register for a new account.");
+  }
+
+  if (!user.password) {
+    throw new AuthenticationError(
+      "This account does not have a password set. Please use the 'Forgot Password' option to set a password."
+    );
   }
 
   // Verify password
   const isPasswordValid = await verifyPassword(data.password, user.password);
 
   if (!isPasswordValid) {
-    throw new AuthenticationError("Invalid credentials");
+    throw new AuthenticationError(
+      "Incorrect password. Please check your password and try again."
+    );
   }
 
   // Check if two-factor authentication is enabled
@@ -184,12 +194,16 @@ export const verifyEmail = async (data: VerifyEmailInput): Promise<User> => {
   });
 
   if (!verificationToken) {
-    throw new ValidationError("Invalid or expired verification code");
+    throw new ValidationError(
+      "The verification code you entered is invalid or has expired. Please check your email for a new verification code or request a new one."
+    );
   }
 
   // Check if token is expired
   if (new Date() > verificationToken.expires) {
-    throw new ValidationError("Verification code has expired");
+    throw new ValidationError(
+      "The verification code you entered has expired. Please check your email for a new verification code or request a new one."
+    );
   }
 
   // Find the user
@@ -198,7 +212,9 @@ export const verifyEmail = async (data: VerifyEmailInput): Promise<User> => {
   });
 
   if (!user) {
-    throw new NotFoundError("User not found");
+    throw new NotFoundError(
+      "No account found with this email address. Please check your email or register for a new account."
+    );
   }
 
   // Update user's email verification status
@@ -255,12 +271,16 @@ export const newPassword = async (data: NewPasswordInput): Promise<void> => {
   });
 
   if (!resetToken) {
-    throw new ValidationError("Invalid or expired password reset token");
+    throw new ValidationError(
+      "The password reset token you entered is invalid or has expired. Please check your email for a new password reset token or request a new one."
+    );
   }
 
   // Check if token is expired
   if (new Date() > resetToken.expires) {
-    throw new ValidationError("Password reset token has expired");
+    throw new ValidationError(
+      "The password reset token you entered has expired. Please check your email for a new password reset token or request a new one."
+    );
   }
 
   // Find the user
@@ -269,7 +289,9 @@ export const newPassword = async (data: NewPasswordInput): Promise<void> => {
   });
 
   if (!user) {
-    throw new NotFoundError("User not found");
+    throw new NotFoundError(
+      "No account found with this email address. Please check your email or register for a new account."
+    );
   }
 
   // Hash the new password
@@ -304,12 +326,14 @@ export const verifyTwoFactorToken = async (
   });
 
   if (!user) {
-    throw new NotFoundError("User not found");
+    throw new NotFoundError(
+      "No account found with this email address. Please check your email or register for a new account."
+    );
   }
 
   if (!user.isTwoFactorEnabled || !user.mfaSecret) {
     throw new ValidationError(
-      "Two-factor authentication is not enabled for this user"
+      "Two-factor authentication is not enabled for this account. Please contact support if you believe this is an error."
     );
   }
 
@@ -322,7 +346,9 @@ export const verifyTwoFactorToken = async (
   });
 
   if (!isValid) {
-    throw new AuthenticationError("Invalid two-factor code");
+    throw new AuthenticationError(
+      "The two-factor code you entered is invalid. Please check your email for a new two-factor code or request a new one."
+    );
   }
 
   // Create or update two-factor confirmation
@@ -429,7 +455,9 @@ export const refreshAccessToken = async (
 
     // Check if token is a refresh token
     if (payload.type !== "refresh") {
-      throw new AuthenticationError("Invalid refresh token");
+      throw new AuthenticationError(
+        "The refresh token you entered is invalid. Please contact support if you believe this is an error."
+      );
     }
 
     // Find the refresh token in the database
@@ -441,7 +469,9 @@ export const refreshAccessToken = async (
     });
 
     if (!storedToken) {
-      throw new AuthenticationError("Invalid refresh token");
+      throw new AuthenticationError(
+        "The refresh token you entered is invalid. Please contact support if you believe this is an error."
+      );
     }
 
     // Check if token is expired
@@ -451,7 +481,9 @@ export const refreshAccessToken = async (
         where: { id: storedToken.id },
       });
 
-      throw new AuthenticationError("Refresh token expired");
+      throw new AuthenticationError(
+        "The refresh token you entered has expired. Please contact support if you believe this is an error."
+      );
     }
 
     // Find the user
@@ -460,7 +492,9 @@ export const refreshAccessToken = async (
     });
 
     if (!user) {
-      throw new NotFoundError("User not found");
+      throw new NotFoundError(
+        "No account found with this email address. Please check your email or register for a new account."
+      );
     }
 
     // Delete the old refresh token
@@ -488,7 +522,9 @@ export const refreshAccessToken = async (
 
     return newTokens;
   } catch (error) {
-    throw new AuthenticationError("Invalid refresh token");
+    throw new AuthenticationError(
+      "The refresh token you entered is invalid. Please contact support if you believe this is an error."
+    );
   }
 };
 
@@ -558,7 +594,9 @@ export const verifyLoginCode = async (
   });
 
   if (!user) {
-    throw new AuthenticationError("Invalid verification credentials");
+    throw new AuthenticationError(
+      "Invalid verification credentials. Please check your email for a new verification code or request a new one."
+    );
   }
 
   // Find the token
@@ -573,7 +611,9 @@ export const verifyLoginCode = async (
   });
 
   if (!twoFactorToken) {
-    throw new AuthenticationError("Invalid or expired verification code");
+    throw new AuthenticationError(
+      "The verification code you entered is invalid or has expired. Please check your email for a new verification code or request a new one."
+    );
   }
 
   // Delete the token (one-time use)

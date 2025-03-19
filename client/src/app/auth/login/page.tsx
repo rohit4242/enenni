@@ -46,38 +46,56 @@ export default function LoginPage() {
       });
 
       if (response.status === "error") {
+        if (response.error === "Two factor authentication required") {
+          setTwoFactorEmail(values.email);
+          setShowTwoFactor(true);
+          setIsLoading(false);
+          return;
+        }
+
         setError(response.error);
         setIsLoading(false);
         return;
       }
 
-      // Handle two-factor authentication
-      if (
-        response.data.user?.isTwoFactorEnabled &&
-        !response.data.accessToken
-      ) {
-        setTwoFactorEmail(values.email);
-        setShowTwoFactor(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log("Login successful, redirecting to verification");
-      
-      // Set email_verified cookie based on verification status
-      if (response.data.user.emailVerified) {
-        Cookies.set("email_verified", "true", {
+      // Set auth stage cookie based on verification status
+      if (!response.data.user.emailVerified) {
+        // User needs email verification
+        Cookies.set("auth_stage", "registered", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+        
+        Cookies.set("email_verified", "false", {
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           path: "/",
           expires: 30 // 30 days
         });
       } else {
-        Cookies.set("email_verified", "false", {
+        // Email is verified, set appropriate cookies
+        Cookies.set("email_verified", "true", {
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           path: "/",
           expires: 30 // 30 days
+        });
+        
+        Cookies.set("auth_stage", "email_verified", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+        
+        // Reset login verification state
+        Cookies.set("login_verified", "false", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 1 // 1 day
         });
       }
       
@@ -87,14 +105,6 @@ export default function LoginPage() {
         sameSite: "lax",
         path: "/",
         expires: 30 // 30 days
-      });
-      
-      // Reset login_verified cookie to ensure verification happens
-      Cookies.set("login_verified", "false", {
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        expires: 1 // 1 day
       });
       
       // Invalidate the auth query to refresh user data
@@ -136,20 +146,44 @@ export default function LoginPage() {
       
       console.log("Login successful, redirecting to verification");
       
-      // Set email_verified cookie based on verification status
-      if (response.data.user.emailVerified) {
-        Cookies.set("email_verified", "true", {
+      // Set auth stage cookie based on verification status
+      if (!response.data.user.emailVerified) {
+        // User needs email verification
+        Cookies.set("auth_stage", "registered", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+        
+        Cookies.set("email_verified", "false", {
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           path: "/",
           expires: 30 // 30 days
         });
       } else {
-        Cookies.set("email_verified", "false", {
+        // Email is verified, update cookies
+        Cookies.set("email_verified", "true", {
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           path: "/",
           expires: 30 // 30 days
+        });
+        
+        Cookies.set("auth_stage", "email_verified", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+        
+        // Login verification needed
+        Cookies.set("login_verified", "false", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 1 // 1 day
         });
       }
       
@@ -159,14 +193,6 @@ export default function LoginPage() {
         sameSite: "lax",
         path: "/",
         expires: 30 // 30 days
-      });
-      
-      // Reset login_verified cookie to ensure verification happens
-      Cookies.set("login_verified", "false", {
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        expires: 1 // 1 day
       });
       
       // Invalidate the auth query to refresh user data

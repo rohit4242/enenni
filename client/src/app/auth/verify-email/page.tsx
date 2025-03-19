@@ -14,14 +14,14 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
-  FormMessage
+  FormMessage,
 } from "@/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,12 +30,30 @@ import Cookies from "js-cookie";
 
 // Form schema for verification code
 const verificationSchema = z.object({
-  digit1: z.string().length(1).regex(/^[0-9]$/, "Must be a number"),
-  digit2: z.string().length(1).regex(/^[0-9]$/, "Must be a number"),
-  digit3: z.string().length(1).regex(/^[0-9]$/, "Must be a number"),
-  digit4: z.string().length(1).regex(/^[0-9]$/, "Must be a number"),
-  digit5: z.string().length(1).regex(/^[0-9]$/, "Must be a number"),
-  digit6: z.string().length(1).regex(/^[0-9]$/, "Must be a number"),
+  digit1: z
+    .string()
+    .length(1)
+    .regex(/^[0-9]$/, "Must be a number"),
+  digit2: z
+    .string()
+    .length(1)
+    .regex(/^[0-9]$/, "Must be a number"),
+  digit3: z
+    .string()
+    .length(1)
+    .regex(/^[0-9]$/, "Must be a number"),
+  digit4: z
+    .string()
+    .length(1)
+    .regex(/^[0-9]$/, "Must be a number"),
+  digit5: z
+    .string()
+    .length(1)
+    .regex(/^[0-9]$/, "Must be a number"),
+  digit6: z
+    .string()
+    .length(1)
+    .regex(/^[0-9]$/, "Must be a number"),
 });
 
 type VerificationFormValues = z.infer<typeof verificationSchema>;
@@ -44,6 +62,7 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams?.get("code");
+  const emailParam = searchParams?.get("email");
   const { user, refetch } = useAuthContext();
 
   const [isVerifying, setIsVerifying] = useState(false);
@@ -51,11 +70,14 @@ export default function VerifyEmailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
+  const [manualEmail, setManualEmail] = useState("");
+  const [showManualEmail, setShowManualEmail] = useState(false);
 
   useEffect(() => {
     if (user?.emailVerified) {
       router.push("/");
     }
+    refetch();
   }, [user?.emailVerified, router]);
 
   // Initialize form with default values
@@ -72,35 +94,49 @@ export default function VerifyEmailPage() {
   });
 
   // Handle input focus movement
-  const handleDigitInput = (e: React.ChangeEvent<HTMLInputElement>, field: keyof VerificationFormValues) => {
+  const handleDigitInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: keyof VerificationFormValues
+  ) => {
     const value = e.target.value;
     const isValid = /^[0-9]$/.test(value);
 
     if (isValid) {
       form.setValue(field, value);
-      const fieldNumber = parseInt(field.replace('digit', ''));
-      const nextField = `digit${fieldNumber + 1}` as keyof VerificationFormValues;
+      const fieldNumber = parseInt(field.replace("digit", ""));
+      const nextField = `digit${
+        fieldNumber + 1
+      }` as keyof VerificationFormValues;
 
       if (nextField in form.getValues() && fieldNumber < 6) {
-        const nextInput = document.querySelector(`input[name=${nextField}]`) as HTMLInputElement;
+        const nextInput = document.querySelector(
+          `input[name=${nextField}]`
+        ) as HTMLInputElement;
         if (nextInput) {
           nextInput.focus();
         }
       }
-    } else if (value === '') {
-      form.setValue(field, '');
+    } else if (value === "") {
+      form.setValue(field, "");
     } else {
       e.preventDefault();
     }
   };
 
   // Handle backspace key navigation
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, field: keyof VerificationFormValues) => {
-    if (e.key === 'Backspace' && !form.getValues()[field]) {
-      const fieldNumber = parseInt(field.replace('digit', ''));
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    field: keyof VerificationFormValues
+  ) => {
+    if (e.key === "Backspace" && !form.getValues()[field]) {
+      const fieldNumber = parseInt(field.replace("digit", ""));
       if (fieldNumber > 1) {
-        const prevField = `digit${fieldNumber - 1}` as keyof VerificationFormValues;
-        const prevInput = document.querySelector(`input[name=${prevField}]`) as HTMLInputElement;
+        const prevField = `digit${
+          fieldNumber - 1
+        }` as keyof VerificationFormValues;
+        const prevInput = document.querySelector(
+          `input[name=${prevField}]`
+        ) as HTMLInputElement;
         if (prevInput) {
           prevInput.focus();
         }
@@ -114,35 +150,110 @@ export default function VerifyEmailPage() {
     setError(null);
 
     const verificationCode =
-      data.digit1 + data.digit2 + data.digit3 + data.digit4 + data.digit5 + data.digit6;
+      data.digit1 +
+      data.digit2 +
+      data.digit3 +
+      data.digit4 +
+      data.digit5 +
+      data.digit6;
+
+    // Get email from various sources in priority order
+    const emailToVerify =
+      user?.email ||
+      emailParam ||
+      Cookies.get("user_email") ||
+      (showManualEmail ? manualEmail : "");
+
+    // Check if we have a valid email
+    if (!emailToVerify) {
+      setError(
+        "Email address not found. Please enter your email address below."
+      );
+      setShowManualEmail(true);
+      setIsVerifying(false);
+      return;
+    }
 
     try {
-      const response = await verifyEmail(verificationCode, user?.email || "");
+      const response = await verifyEmail(verificationCode, emailToVerify);
 
       // Check if there's an error from the API call
-      if (response.status === 'error') {
+      if (response.status === "error") {
         setError(response.error);
         setIsVerifying(false);
+
+        // If email error is detected, show manual email input
+        if (response.error.toLowerCase().includes("email")) {
+          setShowManualEmail(true);
+        }
         return;
       }
 
       if (response.status === "success") {
+        // Store the valid email
+        Cookies.set("user_email", emailToVerify, {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30, // 30 days
+        });
+
         // Set email_verified cookie
         Cookies.set("email_verified", "true", {
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           path: "/",
-          expires: 30 // 30 days
+          expires: 30, // 30 days
         });
-        
-        await refetch();
+
+        // Update auth stage
+        Cookies.set("auth_stage", "email_verified", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30, // 30 days
+        });
+
+        // Add a client-side cookie to explicitly prevent redirect to login-verification
+        Cookies.set("first_login_after_verification", "true", {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 1 / 48, // 30 minutes
+        });
         setIsSuccess(true);
+
+        // Forcibly redirect to login page after successful verification with email parameter
+        window.location.href = `/auth/login?email=${encodeURIComponent(
+          emailToVerify
+        )}&verification=complete`;
+        return; // Stop execution to prevent any other redirects
       } else {
         setError(response.error || "Email verification failed");
       }
     } catch (err: any) {
       console.error("Verification error:", err);
-      setError(err.response?.data?.error?.message || err.response?.data?.message || "Email verification failed. Please try again.");
+      if (err.response?.data?.error?.issues) {
+        // Extract specific validation error
+        const emailError = err.response.data.error.issues.find((issue: any) =>
+          issue.path.includes("email")
+        );
+        if (emailError) {
+          setError(`Email error: ${emailError.message}`);
+          setShowManualEmail(true);
+        } else {
+          setError(
+            err.response?.data?.error?.message ||
+              "Email verification failed. Please try again."
+          );
+        }
+      } else {
+        setError(
+          err.response?.data?.error?.message ||
+            err.response?.data?.message ||
+            "Email verification failed. Please try again."
+        );
+      }
     } finally {
       setIsVerifying(false);
     }
@@ -151,40 +262,92 @@ export default function VerifyEmailPage() {
   // Auto-submit when all digits are filled and valid
   useEffect(() => {
     const values = form.getValues();
-    const allFilled = Object.values(values).every(value => value && /^[0-9]$/.test(value));
+    const allFilled = Object.values(values).every(
+      (value) => value && /^[0-9]$/.test(value)
+    );
 
     if (allFilled && !isVerifying && !isSuccess) {
       form.handleSubmit(onSubmit)();
     }
   }, [form.watch("digit6")]);
 
+  // Handle resend function with proper email
   const handleResendVerificationEmail = async () => {
-    if (isResending || !user?.email) return;
-    
+    if (isResending) return;
+
+    // Get email from various sources in priority order
+    const emailToVerify =
+      user?.email ||
+      emailParam ||
+      Cookies.get("user_email") ||
+      (showManualEmail ? manualEmail : "");
+
+    // Check if we have a valid email
+    if (!emailToVerify) {
+      setError(
+        "Email address not found. Please enter your email address below."
+      );
+      setShowManualEmail(true);
+      return;
+    }
+
     setIsResending(true);
     setResendSuccess(null);
     setError(null);
-    
+
     try {
-      const response = await resendVerificationEmail(user.email);
-      
+      const response = await resendVerificationEmail(emailToVerify);
+
       // Check if there's an error from the API call
-      if (response.status === 'error') {
+      if (response.status === "error") {
         setError(response.error);
+
+        // If email error is detected, show manual email input
+        if (response.error.toLowerCase().includes("email")) {
+          setShowManualEmail(true);
+        }
+
         setIsResending(false);
         return;
       }
-      
+
+      // Store the valid email in a cookie
+      Cookies.set("user_email", emailToVerify, {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 30, // 30 days
+      });
+
       setResendSuccess("Verification email has been sent!");
       setTimeout(() => setResendSuccess(null), 5000);
     } catch (err: any) {
       console.error("Resend verification error:", err);
-      setError(err.response?.data?.error?.message || err.response?.data?.message || "Failed to resend verification email.");
+      if (err.response?.data?.error?.issues) {
+        // Extract specific validation error
+        const emailError = err.response.data.error.issues.find((issue: any) =>
+          issue.path.includes("email")
+        );
+        if (emailError) {
+          setError(`Email error: ${emailError.message}`);
+          setShowManualEmail(true);
+        } else {
+          setError(
+            err.response?.data?.error?.message ||
+              "Failed to resend verification email."
+          );
+        }
+      } else {
+        setError(
+          err.response?.data?.error?.message ||
+            err.response?.data?.message ||
+            "Failed to resend verification email."
+        );
+      }
     } finally {
       setIsResending(false);
     }
   };
-
 
   return (
     <div className="max-w-md w-full mx-auto space-y-6 p-6 bg-white shadow-lg rounded-lg">
@@ -196,30 +359,51 @@ export default function VerifyEmailPage() {
                 <CheckCircle2 className="h-8 w-8 text-teal-500" />
               </div>
             </div>
-            <CardTitle className="text-center text-2xl font-semibold">Email Verified</CardTitle>
+            <CardTitle className="text-center text-2xl font-semibold">
+              Email Verified
+            </CardTitle>
             <CardDescription className="text-center text-gray-600">
-              Your email has been successfully verified. You can now access all features of your account.
+              Your email has been successfully verified. You can now login to
+              your account.
             </CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button className="w-full bg-teal-500 text-white hover:bg-teal-600" onClick={() => router.push("/")}>
-              Continue to Dashboard
+            <Button
+              className="w-full bg-teal-500 text-white hover:bg-teal-600"
+              onClick={() => router.push("/auth/login")}
+            >
+              Continue to Login
             </Button>
           </CardFooter>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-center text-2xl font-semibold">Verify Your Email</CardTitle>
+            <CardTitle className="text-center text-2xl font-semibold">
+              Verify Your Email
+            </CardTitle>
             <CardDescription className="text-center text-gray-600">
-              Enter the 6-digit code sent to {user?.email || "your email"}
+              Enter the 6-digit code sent to{" "}
+              {emailParam ||
+                Cookies.get("user_email") ||
+                (showManualEmail ? manualEmail : "your email")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
-              <Alert variant="destructive" className="border border-destructive/30">
+              <Alert
+                variant="destructive"
+                className="border border-destructive/30"
+              >
                 <AlertDescription className="font-medium flex items-center gap-x-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                   </svg>
                   {error}
@@ -227,18 +411,46 @@ export default function VerifyEmailPage() {
               </Alert>
             )}
             {resendSuccess && (
-              <Alert variant="default" className="mb-4 bg-green-50 border border-green-200 text-green-800">
+              <Alert
+                variant="default"
+                className="mb-4 bg-green-50 border border-green-200 text-green-800"
+              >
                 <AlertDescription className="flex items-center">
                   <CheckCircle2 className="mr-2 h-5 w-5" />
                   {resendSuccess}
                 </AlertDescription>
               </Alert>
             )}
+
+            {/* Manual email input for when automatic detection fails */}
+            {showManualEmail && (
+              <div className="mt-4 mb-4">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Your Email Address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={manualEmail}
+                  onChange={(e) => setManualEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  className="w-full"
+                />
+              </div>
+            )}
+
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 <div className="flex justify-center gap-2">
                   {[1, 2, 3, 4, 5, 6].map((digit) => {
-                    const fieldName = `digit${digit}` as keyof VerificationFormValues;
+                    const fieldName =
+                      `digit${digit}` as keyof VerificationFormValues;
                     return (
                       <FormField
                         key={fieldName}
@@ -268,8 +480,11 @@ export default function VerifyEmailPage() {
                 <Button
                   type="submit"
                   className="w-full bg-teal-500 text-white hover:bg-teal-600"
-                  loading={isVerifying}
-                  disabled={isVerifying || !form.formState.isValid}
+                  disabled={
+                    isVerifying ||
+                    !form.formState.isValid ||
+                    (showManualEmail && !manualEmail.includes("@"))
+                  }
                 >
                   {isVerifying ? (
                     <>
@@ -293,10 +508,26 @@ export default function VerifyEmailPage() {
             </Button>
             <div className="text-sm text-center text-muted-foreground mt-2">
               Didn&apos;t receive a code? Check your spam folder or
-              <Button variant="link" className="p-0 h-auto text-teal-500 hover:underline" onClick={handleResendVerificationEmail}>
-                request a new code
+              <Button
+                variant="link"
+                className="p-0 h-auto text-teal-500 hover:underline"
+                onClick={handleResendVerificationEmail}
+                disabled={
+                  isResending || (showManualEmail && !manualEmail.includes("@"))
+                }
+              >
+                {isResending ? "Sending..." : "request a new code"}
               </Button>
             </div>
+            {!showManualEmail && (
+              <Button
+                variant="link"
+                className="mt-2 text-xs text-muted-foreground h-auto p-0"
+                onClick={() => setShowManualEmail(true)}
+              >
+                Need to update your email address?
+              </Button>
+            )}
           </CardFooter>
         </Card>
       )}

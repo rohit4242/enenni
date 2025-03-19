@@ -14,6 +14,7 @@ import { registerSchema } from "@/lib/validations/auth";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { registerUser } from "@/lib/api/auth";
 import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent } from "@/components/ui/select";
+import Cookies from "js-cookie";
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -55,37 +56,51 @@ export default function RegisterPage() {
         isEntity: values.accountType === "entity"
       });
       
-      // Check if there's an error from the API call
-      if (response.status === 'error') {
-        // Highlight the email field if it's a conflict error (email already exists)
-        if (response.code === 'CONFLICT_ERROR') {
-          form.setError('email', { 
-            type: 'manual', 
-            message: 'This email is already registered' 
-          });
-        }
-        
+      if (response.status === "error") {
         setError(response.error);
         setIsLoading(false);
         return;
       }
+
+      // Set auth stage cookie to track registration
+      Cookies.set("auth_stage", "registered", {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 30 // 30 days
+      });
       
+      // Set email_verified to false initially
+      Cookies.set("email_verified", "false", {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 30 // 30 days
+      });
+      
+      // Store user email for middleware
+      Cookies.set("user_email", values.email, {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 30 // 30 days
+      });
+
       setSuccess(true);
+      
+      // Redirect to email verification page after a short delay
       setTimeout(() => {
         router.push("/auth/verify-email");
       }, 2000);
     } catch (err: any) {
       console.error("Registration error:", err);
       
-      // Try to extract the specific error message for email conflicts
-      if (err.response?.data?.error?.code === 'CONFLICT_ERROR') {
-        form.setError('email', { 
-          type: 'manual', 
-          message: 'This email is already registered' 
-        });
-        setError(err.response.data.error.message);
+      if (err.response?.data?.error?.issues) {
+        // Extract validation errors
+        const errorMessages = err.response.data.error.issues.map((issue: any) => issue.message).join(", ");
+        setError(errorMessages);
       } else {
-        setError(err.response?.data?.error?.message || err.response?.data?.message || "Registration failed. Please try again.");
+        setError(err.response?.data?.error?.message || err.message || "Registration failed. Please try again.");
       }
     } finally {
       setIsLoading(false);

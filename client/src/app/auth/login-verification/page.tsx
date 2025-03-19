@@ -21,7 +21,6 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { loginVerificationSchema } from "@/lib/validations/auth";
 import { sendLoginVerificationCode, verifyLoginCode } from "@/lib/api/auth";
 
 // Form schema for verification code
@@ -45,7 +44,9 @@ export default function LoginVerificationPage() {
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
-  const email = searchParams.get("email");
+  const [manualEmail, setManualEmail] = useState("");
+  const [showManualEmail, setShowManualEmail] = useState(false);
+  const emailParam = searchParams.get("email");
 
   const form = useForm<VerificationFormValues>({
     resolver: zodResolver(verificationSchema),
@@ -60,29 +61,44 @@ export default function LoginVerificationPage() {
   });
 
   useEffect(() => {
-    // Redirect if no email is provided
-    if (!email) {
+    // Initialize manual email with param if available
+    if (emailParam) {
+      setManualEmail(emailParam);
+    }
+    
+    // Redirect if no email is provided and manual email option is not shown
+    if (!emailParam && !showManualEmail) {
       router.push("/auth/login");
       return;
     }
 
     // Send verification code on initial load
     const sendCode = async () => {
+      if (!emailParam && !manualEmail) return;
+      
+      const emailToVerify = emailParam || manualEmail;
+      
       setIsLoading(true);
       try {
-        const response = await sendLoginVerificationCode(email);
+        const response = await sendLoginVerificationCode(emailToVerify);
         if (response.status === "error") {
           setError(response.error);
+          
+          // If email error is detected, show manual email input
+          if (response.error.toLowerCase().includes('email')) {
+            setShowManualEmail(true);
+          }
         }
       } catch (err: any) {
         setError("Failed to send verification code. Please try again.");
+        setShowManualEmail(true);
       } finally {
         setIsLoading(false);
       }
     };
 
     sendCode();
-  }, [email, router]);
+  }, [emailParam, router]);
 
   useEffect(() => {
     // Countdown timer for resend button
@@ -132,7 +148,14 @@ export default function LoginVerificationPage() {
   };
 
   const onSubmit = async (data: VerificationFormValues) => {
-    if (!email) return;
+    // Get email from manual input or param
+    const emailToVerify = showManualEmail ? manualEmail : emailParam;
+    
+    if (!emailToVerify) {
+      setError("Email address is required");
+      setShowManualEmail(true);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -141,11 +164,17 @@ export default function LoginVerificationPage() {
       data.digit1 + data.digit2 + data.digit3 + data.digit4 + data.digit5 + data.digit6;
 
     try {
-      const response = await verifyLoginCode({ email, code: verificationCode });
+      const response = await verifyLoginCode({ email: emailToVerify, code: verificationCode });
       
       // Check if there's an error from the API call
       if (response.status === 'error') {
         setError(response.error);
+        
+        // If email error is detected, show manual email input
+        if (response.error.toLowerCase().includes('email')) {
+          setShowManualEmail(true);
+        }
+        
         setIsLoading(false);
         return;
       }
@@ -177,8 +206,16 @@ export default function LoginVerificationPage() {
         });
       }
       
+      // Update auth stage to complete
+      Cookies.set("auth_stage", "complete", {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: 30 // 30 days
+      });
+      
       // Store user email in a cookie for middleware to use
-      Cookies.set("user_email", email, {
+      Cookies.set("user_email", emailToVerify, {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
@@ -196,7 +233,20 @@ export default function LoginVerificationPage() {
       }
     } catch (err: any) {
       console.error("Verification error:", err);
-      setError(err.response?.data?.error?.message || err.response?.data?.message || "Invalid verification code. Please try again.");
+      if (err.response?.data?.error?.issues) {
+        // Extract specific validation error
+        const emailError = err.response.data.error.issues.find(
+          (issue: any) => issue.path.includes('email')
+        );
+        if (emailError) {
+          setError(`Email error: ${emailError.message}`);
+          setShowManualEmail(true);
+        } else {
+          setError(err.response?.data?.error?.message || "Invalid verification code. Please try again.");
+        }
+      } else {
+        setError(err.response?.data?.error?.message || err.response?.data?.message || "Invalid verification code. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -213,7 +263,12 @@ export default function LoginVerificationPage() {
   }, [form.watch("digit6")]);
 
   const handleResendCode = async () => {
-    if (!email || resendDisabled) return;
+    const emailToVerify = showManualEmail ? manualEmail : emailParam;
+    
+    if (!emailToVerify || resendDisabled) {
+      setShowManualEmail(true);
+      return;
+    }
 
     setResendDisabled(true);
     setCountdown(60); // 60 seconds cooldown
@@ -221,15 +276,29 @@ export default function LoginVerificationPage() {
     setResendSuccess(null);
 
     try {
-      const response = await sendLoginVerificationCode(email);
+      const response = await sendLoginVerificationCode(emailToVerify);
       if (response.status === "error") {
         setError(response.error);
+        
+        // If email error is detected, show manual email input
+        if (response.error.toLowerCase().includes('email')) {
+          setShowManualEmail(true);
+        }
       } else {
+        // Store the valid email in a cookie
+        Cookies.set("user_email", emailToVerify, {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: 30 // 30 days
+        });
+        
         setResendSuccess("Verification code has been sent!");
         setTimeout(() => setResendSuccess(null), 5000);
       }
     } catch (err: any) {
       setError("Failed to resend verification code. Please try again.");
+      setShowManualEmail(true);
     }
   };
 
@@ -240,7 +309,9 @@ export default function LoginVerificationPage() {
             <CardTitle className="text-center text-2xl font-semibold">Login Verification</CardTitle>
             <CardDescription className="text-center text-gray-600">
               Please enter the 6-digit verification code sent to your email
-              {email && <span className="font-medium"> ({email})</span>}
+              {(emailParam || (showManualEmail && manualEmail)) && 
+                <span className="font-medium"> ({showManualEmail ? manualEmail : emailParam})</span>
+              }
             </CardDescription>
           </CardHeader>
 
@@ -265,6 +336,23 @@ export default function LoginVerificationPage() {
                   {resendSuccess}
                 </AlertDescription>
               </Alert>
+            )}
+            
+            {/* Manual email input for when automatic detection fails */}
+            {showManualEmail && (
+              <div className="mt-4 mb-4">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Your Email Address
+                </label>
+                <Input
+                  id="email"
+                  type="email" 
+                  value={manualEmail}
+                  onChange={(e) => setManualEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  className="w-full"
+                />
+              </div>
             )}
 
             <Form {...form}>
@@ -301,7 +389,7 @@ export default function LoginVerificationPage() {
                 <Button
                   type="submit"
                   className="w-full bg-teal-600 text-white hover:bg-teal-700 transition duration-200"
-                  disabled={isLoading || !form.formState.isValid}
+                  disabled={isLoading || !form.formState.isValid || (showManualEmail && !manualEmail.includes('@'))}
                 >
                   {isLoading ? (
                     <>
@@ -330,13 +418,22 @@ export default function LoginVerificationPage() {
                 variant="link" 
                 className="p-0 h-auto text-teal-600 hover:underline" 
                 onClick={handleResendCode}
-                disabled={resendDisabled}
+                disabled={resendDisabled || (showManualEmail && !manualEmail.includes('@'))}
               >
                 {resendDisabled
                   ? `Resend code in ${countdown}s`
                   : "Request a new code"}
               </Button>
             </div>
+            {!showManualEmail && (
+              <Button
+                variant="link"
+                className="mt-2 text-xs text-muted-foreground h-auto p-0"
+                onClick={() => setShowManualEmail(true)}
+              >
+                Need to update your email address?
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>

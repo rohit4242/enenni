@@ -1,120 +1,185 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = [
-  "/", // Root is now protected
-  "/orders",
-  "/settings",
-  "/balances",
-  "/wallets",
-];
-
+// Define route groups
 const publicRoutes = [
   "/auth/login",
   "/auth/register",
   "/auth/new-password",
-  "/auth/verify-email",
-  "/auth/login-verification",
   "/auth/reset",
   "/auth/error",
 ];
 
-// Routes that require email verification
-const emailVerificationRequiredRoutes = [
-  "/", // Root is now protected
+const protectedRoutes = [
+  "/", // Root is protected
   "/orders",
   "/settings",
   "/balances",
   "/wallets",
 ];
 
-// Routes that require login verification
-const loginVerificationRequiredRoutes = [
-  "/", // Root is now protected
-  "/orders",
-  "/settings",
-  "/balances",
-  "/wallets",
-];
+// Authentication flow routes
+const AUTH_ROUTES = {
+  LOGIN: "/auth/login",
+  REGISTER: "/auth/register",
+  EMAIL_VERIFICATION: "/auth/verify-email",
+  LOGIN_VERIFICATION: "/auth/login-verification",
+  DASHBOARD: "/",
+};
 
-export default async function middleware(req: NextRequest) {
-  const path = req.nextUrl.pathname;
+// Cookie names for tracking auth state
+const COOKIES = {
+  ACCESS_TOKEN: "access_token",
+  EMAIL_VERIFIED: "email_verified",
+  LOGIN_VERIFIED: "login_verified",
+  AUTH_STAGE: "auth_stage", // Tracks where user is in auth flow
+  USER_EMAIL: "user_email",
+  FIRST_LOGIN_AFTER_EMAIL_VERIFICATION: "first_login_after_verification", // New cookie to track first login after email verification
+};
 
-  // Skip middleware for APIs and static files
-  if (path.startsWith("/api/") || path.includes(".")) {
+// Auth stages to track progress
+enum AuthStage {
+  REGISTERED = "registered",
+  EMAIL_VERIFIED = "email_verified",
+  LOGIN_VERIFIED = "login_verified",
+  COMPLETE = "complete",
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const response = NextResponse.next();
+  
+  // Get authentication state from cookies
+  const token = request.cookies.get(COOKIES.ACCESS_TOKEN)?.value;
+  const isEmailVerified = request.cookies.get(COOKIES.EMAIL_VERIFIED)?.value === "true";
+  const isLoginVerified = request.cookies.get(COOKIES.LOGIN_VERIFIED)?.value === "true";
+  const authStage = request.cookies.get(COOKIES.AUTH_STAGE)?.value as AuthStage | undefined;
+  const isFirstLoginAfterVerification = request.cookies.get(COOKIES.FIRST_LOGIN_AFTER_EMAIL_VERIFICATION)?.value === "true";
+  
+  // Fully authenticated users can access protected routes
+  const isFullyAuthenticated = token && isEmailVerified && isLoginVerified;
+  
+  // 1. Handle public routes (login, register, etc.)
+  if (publicRoutes.some(route => pathname.startsWith(route))) {
+    // If user is fully authenticated, redirect to dashboard
+    if (isFullyAuthenticated && !pathname.includes("error")) {
+      return NextResponse.redirect(new URL(AUTH_ROUTES.DASHBOARD, request.url));
+    }
+    
     return NextResponse.next();
   }
-
-  // More flexible matching using .some() and startsWith
-  const isProtectedRoute = protectedRoutes.some(
-    (route) => path === route || path.startsWith(`${route}/`)
-  );
-
-  const isPublicRoute =
-    publicRoutes.some(
-      (route) => path === route || path.startsWith(`${route}/`)
-    ) || path.startsWith("/auth/"); // Allow all auth paths
-
-  const accessToken = req.cookies.get("access_token")?.value;
-
-  // Check verification statuses from cookies
-  const isEmailVerified = req.cookies.get("email_verified")?.value === "true";
-  const isLoginVerified = req.cookies.get("login_verified")?.value === "true";
-
-  // For protected routes, redirect to login if no token
-  if (isProtectedRoute && !accessToken) {
-    return NextResponse.redirect(new URL("/auth/login", req.nextUrl));
+  
+  // 2. Handle email verification route
+  if (pathname.startsWith(AUTH_ROUTES.EMAIL_VERIFICATION)) {
+    // Allow access if user is registered but email not verified
+    if (token && !isEmailVerified) {
+      return NextResponse.next();
+    }
+    
+    // If email already verified, redirect to login page
+    if (isEmailVerified) {
+      // Set a cookie to indicate this is the first login after email verification
+      const loginRedirect = NextResponse.redirect(new URL(AUTH_ROUTES.LOGIN, request.url));
+      loginRedirect.cookies.set(COOKIES.FIRST_LOGIN_AFTER_EMAIL_VERIFICATION, "true", {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 10, // 10 minutes
+      });
+      return loginRedirect;
+    }
+    
+    // Otherwise redirect to login
+    return NextResponse.redirect(new URL(AUTH_ROUTES.LOGIN, request.url));
   }
-
-  // For routes requiring email verification, redirect to verification page if email not verified
-  const requiresEmailVerification = emailVerificationRequiredRoutes.some(
-    (route) => path === route || path.startsWith(`${route}/`)
-  );
-
-  if (requiresEmailVerification && accessToken && !isEmailVerified) {
-    return NextResponse.redirect(new URL("/auth/verify-email", req.nextUrl));
+  
+  // 3. Handle login verification route
+  if (pathname.startsWith(AUTH_ROUTES.LOGIN_VERIFICATION)) {
+    // Allow access if user has token and email is verified and it's not the first login after verification
+    if (token && isEmailVerified && !isLoginVerified && !isFirstLoginAfterVerification) {
+      return NextResponse.next();
+    }
+    
+    // If already login verified, redirect to dashboard
+    if (token && isEmailVerified && isLoginVerified) {
+      return NextResponse.redirect(new URL(AUTH_ROUTES.DASHBOARD, request.url));
+    }
+    
+    // If it's first login after email verification, redirect to login page
+    if (isFirstLoginAfterVerification) {
+      return NextResponse.redirect(new URL(AUTH_ROUTES.LOGIN, request.url));
+    }
+    
+    // Otherwise redirect to appropriate stage
+    if (!token) {
+      return NextResponse.redirect(new URL(AUTH_ROUTES.LOGIN, request.url));
+    } else if (!isEmailVerified) {
+      return NextResponse.redirect(new URL(AUTH_ROUTES.EMAIL_VERIFICATION, request.url));
+    }
   }
-
-  // For routes requiring login verification, redirect to login verification page if login not verified
-  const requiresLoginVerification = loginVerificationRequiredRoutes.some(
-    (route) => path === route || path.startsWith(`${route}/`)
-  );
-
-  // Extract email from stored JWT or get from cookies
-  const email = req.cookies.get("user_email")?.value;
-
-  if (requiresLoginVerification && accessToken && !isLoginVerified) {
-    // Pass email as a query parameter to the login verification page
-    return NextResponse.redirect(
-      new URL(`/auth/login-verification?email=${email}`, req.nextUrl)
-    );
+  
+  // 4. Protected routes handling
+  if (protectedRoutes.some(route => pathname === route || pathname.startsWith(route))) {
+    // No token, redirect to login
+    if (!token) {
+      return NextResponse.redirect(new URL(AUTH_ROUTES.LOGIN, request.url));
+    }
+    
+    // Email not verified, redirect to verification
+    if (!isEmailVerified) {
+      return NextResponse.redirect(new URL(AUTH_ROUTES.EMAIL_VERIFICATION, request.url));
+    }
+    
+    // Check if it's first login after email verification
+    if (isFirstLoginAfterVerification) {
+      // Clear the first login after verification cookie
+      const loginRedirect = NextResponse.redirect(new URL(AUTH_ROUTES.LOGIN, request.url));
+      loginRedirect.cookies.set(COOKIES.FIRST_LOGIN_AFTER_EMAIL_VERIFICATION, "", {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 0, // Expire immediately
+      });
+      return loginRedirect;
+    }
+    
+    // Login not verified, redirect to login verification
+    if (!isLoginVerified) {
+      // Get user email from cookie for the verification flow
+      const userEmail = request.cookies.get(COOKIES.USER_EMAIL)?.value;
+      const redirectUrl = new URL(AUTH_ROUTES.LOGIN_VERIFICATION, request.url);
+      
+      if (userEmail) {
+        redirectUrl.searchParams.set("email", userEmail);
+      }
+      
+      return NextResponse.redirect(redirectUrl);
+    }
+    
+    // Update auth stage if needed
+    if (authStage !== AuthStage.COMPLETE && isFullyAuthenticated) {
+      response.cookies.set(COOKIES.AUTH_STAGE, AuthStage.COMPLETE, {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      });
+    }
+    
+    // All checks passed, proceed
+    return response;
   }
-
-  // For public routes, redirect to home (dashboard) if already logged in, verified, and not at verification pages
-  if (
-    isPublicRoute &&
-    accessToken &&
-    isEmailVerified &&
-    isLoginVerified &&
-    path !== "/auth/verify-email" &&
-    path !== "/auth/login-verification"
-  ) {
-    return NextResponse.redirect(new URL("/", req.nextUrl));
-  }
-
-  // For all other routes, proceed normally
+  
+  // Default - allow access
   return NextResponse.next();
 }
 
-// Add matcher config to restrict where middleware runs
+// Configure which paths the middleware runs on
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+    // Apply to all routes except api, _next, and static files
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)',
   ],
-};
+}
