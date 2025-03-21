@@ -48,8 +48,8 @@ export default function BankAccountsPage() {
           onClick={onOpen}
           className="text-primary hover:text-primary"
         >
-          <Plus className="mr-2 h-4 w-4" />
-          New Account
+          <Plus className="h-4 w-4" />
+          <span className="hidden md:block">Add Bank Account</span>
         </Button>
       }
     >

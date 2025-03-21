@@ -14,7 +14,6 @@ import cryptoBalanceRouter from "./routes/crypto-balance.routes";
 import transactionRouter from "./routes/transaction.routes";
 import imageUploadRouter from "./routes/image-upload.routes";
 
-// Create the main app
 const app = new Hono();
 
 // Apply global middleware

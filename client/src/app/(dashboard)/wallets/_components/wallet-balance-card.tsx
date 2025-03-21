@@ -15,10 +15,10 @@ import { CryptoWithdrawalModal } from "@/components/modals/transaction/CryptoWit
 
 // Define available networks for crypto types.
 const CRYPTO_NETWORKS: Record<string, string[]> = {
-  BTC: ["Bitcoin"],
-  ETH: ["ERC20"],
-  USDT: ["ERC20", "TRC20"],
-  USDC: ["ERC20", "SOL"],
+  BTC: ["Ethereum", "Tron"],
+  ETH: ["Ethereum", "Tron"],
+  USDT: ["Ethereum", "Tron"],
+  USDC: ["Ethereum", "Tron"],
 };
 
 interface WalletBalanceCardProps {

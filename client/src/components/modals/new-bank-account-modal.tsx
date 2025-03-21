@@ -142,8 +142,8 @@ export function NewBankAccountModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh]">
-        <ScrollArea className="max-h-[calc(90vh-4rem)] overflow-y-auto">
+      <DialogContent className="max-w-md min-w-[400px]">
+      <ScrollArea className="max-h-[calc(90vh-4rem)]">
           <DialogHeader className="px-2">
             <DialogTitle>Add New Bank Account</DialogTitle>
           </DialogHeader>

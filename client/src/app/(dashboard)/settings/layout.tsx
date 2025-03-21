@@ -33,16 +33,31 @@ interface SettingsLayoutProps {
 
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
   return (
-    <div className="max-w-screen-xl mx-auto p-6">
+    <div className="max-w-screen-xl mx-auto sm:p-6">
       <div className="mb-6">
-        <h2 className="text-3xl font-semibold text-white">Settings</h2>
+        <h2 className="text-2xl sm:text-3xl font-semibold text-white">Settings</h2>
         <p className="text-teal-100">Manage your account settings</p>
       </div>
 
-      <div className="flex gap-6 min-h-[calc(100vh-12rem)]">
-        <SidebarNav items={sidebarNavItems} className="w-1/4 h-full" />
-        <div className="flex-1 p-6 bg-white rounded-lg shadow-md h-auto">
-          {children}
+
+
+      <div className="flex flex-col md:flex-row gap-6 min-h-[calc(100vh-12rem)]">
+       
+               {/* Desktop sidebar - hidden on mobile */}
+       <div className="hidden md:block md:w-1/4">
+          <SidebarNav items={sidebarNavItems} className="h-auto" />
+        </div>
+
+         {/* Mobile navigation - only visible on mobile */}
+         <div className="md:hidden bg-slate-900 rounded-md">
+            <SidebarNav items={sidebarNavItems} />
+          </div>
+        {/* Content area with mobile navigation */}
+        <div className="flex-1 flex flex-col bg-white rounded-lg shadow-md">
+         
+          <div className="p-4 sm:p-6 ">
+            {children}
+          </div>
         </div>
       </div>
     </div>

@@ -51,33 +51,28 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 type TwoFactorVerificationValues = z.infer<typeof twoFactorVerificationSchema>;
 
 export default function ProfilePage() {
+  // Place ALL hooks at the top level - no conditional hooks
   const { user, isLoading, refetch } = useAuthContext();
   const router = useRouter();
+
+  // State hooks
   const [activeTab, setActiveTab] = useState("general");
   const [isPageLoaded, setIsPageLoaded] = useState(false);
-
-  // Auth state
   const [authError, setAuthError] = useState<string | null>(null);
   const [isRefreshingAuth, setIsRefreshingAuth] = useState(false);
-
-  // General profile state
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
-
-  // Password state
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-
-  // Two-factor state
   const [twoFactorLoading, setTwoFactorLoading] = useState(false);
   const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [mfaSecret, setMfaSecret] = useState<string | null>(null);
   const [showVerification, setShowVerification] = useState(false);
 
-  // Profile form
+  // Form hooks - must be called unconditionally
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -86,7 +81,6 @@ export default function ProfilePage() {
     },
   });
 
-  // Password form
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
@@ -96,7 +90,6 @@ export default function ProfilePage() {
     },
   });
 
-  // Two-factor verification form
   const twoFactorForm = useForm<TwoFactorVerificationValues>({
     resolver: zodResolver(twoFactorVerificationSchema),
     defaultValues: {
@@ -285,9 +278,10 @@ export default function ProfilePage() {
     setTimeout(() => setProfileSuccess(null), 2000);
   };
 
+  // Return render
   return (
     <AuthGuard>
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Account Settings</h1>
 
         {/* Authentication error alert */}
@@ -329,13 +323,8 @@ export default function ProfilePage() {
           </Alert>
         )}
 
-        {/* Show loading state while authentication is being checked */}
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-2">Loading account information...</p>
-          </div>
-        ) : (
+        {/* Loading and Content Display - Render tabs consistently regardless of loading state */}
+        <div className={isLoading ? "hidden" : "block"}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="general">General</TabsTrigger>
@@ -343,7 +332,7 @@ export default function ProfilePage() {
               <TabsTrigger value="twoFactor">Two-Factor Auth</TabsTrigger>
             </TabsList>
 
-            {/* General Settings Tab */}
+            {/* Tab content is always rendered but may be hidden */}
             <TabsContent value="general">
               <Card>
                 <CardHeader>
@@ -352,27 +341,8 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
-                    <div className="w-full md:w-1/4">
-                      <div className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 mb-2">
-                        {user?.image ? (
-                          <Image
-                            src={user.image}
-                            alt="Profile picture"
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            No Image
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Profile image updates are available in account settings
-                      </div>
-                    </div>
 
-                    <div className="w-full md:w-3/4 space-y-4">
+                    <div className="w-full space-y-4">
                       <div className="space-y-1">
                         <Label>Name</Label>
                         <div className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
@@ -441,7 +411,6 @@ export default function ProfilePage() {
               </Card>
             </TabsContent>
 
-            {/* Security Settings Tab */}
             <TabsContent value="security">
               <Card>
                 <CardHeader>
@@ -555,13 +524,12 @@ export default function ProfilePage() {
               </Card>
             </TabsContent>
 
-            {/* Two-Factor Authentication Tab */}
             <TabsContent value="twoFactor">
               <Card>
                 <CardHeader>
-                  <CardTitle>Two-Factor Authentication</CardTitle>
+                  <CardTitle>Setup an authenticator</CardTitle>
                   <CardDescription>
-                    Add an extra layer of security to your account by enabling two-factor authentication
+                    Add an extra layer of security to your account by setting up authenticator
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -575,10 +543,10 @@ export default function ProfilePage() {
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label>Two-Factor Authentication</Label>
+                          <Label>Setup an authenticator</Label>
                           <p className="text-sm text-muted-foreground">
                             {user?.isTwoFactorEnabled
-                              ? "Your account is protected with two-factor authentication"
+                              ? "Your account is protected with authenticator"
                               : "Protect your account with an authenticator app"}
                           </p>
                         </div>
@@ -650,7 +618,6 @@ export default function ProfilePage() {
                               <Image
                                 src={qrCode}
                                 alt="QR Code"
-
                                 width={200}
                                 height={200}
                                 className="max-w-[200px]"
@@ -759,6 +726,14 @@ export default function ProfilePage() {
               </Card>
             </TabsContent>
           </Tabs>
+        </div>
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-2">Loading account information...</p>
+          </div>
         )}
       </div>
     </AuthGuard>
